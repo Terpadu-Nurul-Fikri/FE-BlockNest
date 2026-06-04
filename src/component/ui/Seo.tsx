@@ -10,8 +10,8 @@ interface SeoProps {
   noIndex?: boolean;
 }
 
-const SITE_NAME = "Norr Furniture";
-const BASE_URL = "https://norr.com"; // update to production domain
+const SITE_NAME = "BlockNest";
+const BASE_URL = "https://blocknest.store"; // update to production domain
 
 export default function Seo({
   title,

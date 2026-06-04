@@ -1,5 +1,5 @@
-// src/component/ui/ProductCard.tsx
-import { useState } from "react";
+// Premium ProductCard with high-end agency aesthetics
+import { useState, useEffect } from "react";
 
 interface ProductCardProps {
   name: string;
@@ -12,6 +12,7 @@ interface ProductCardProps {
   isNew?: boolean;
   slug?: string;
   onAddToCart?: () => void;
+  index?: number; // For staggered animations
 }
 
 export default function ProductCard({
@@ -24,48 +25,85 @@ export default function ProductCard({
   reviewCount = 0,
   isNew = false,
   onAddToCart,
+  index = 0,
 }: Readonly<ProductCardProps>) {
-  const [wishlisted, setWishlisted] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  // Staggered mount animation
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), index * 80);
+    return () => clearTimeout(timer);
+  }, [index]);
+
   const ratingLabel =
     reviewCount > 0
       ? `Rated ${rating} out of 5, ${reviewCount} reviews`
       : `Rated ${rating} out of 5`;
 
+  // Format price with currency
+  const formattedPrice = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+  }).format(price);
+
   return (
-    <article className="group relative">
-      {/* Image container */}
-      <div className="relative overflow-hidden rounded-2xl aspect-4/5 bg-stone-100 mb-4">
+    <article
+      className={`group relative transition-all duration-500 ease-out ${
+        isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+      style={{ transitionDelay: `${index * 60}ms` }}
+    >
+      {/* Image Container */}
+      <div className="relative overflow-hidden rounded-2xl bg-stone-100 aspect-[4/5] mb-4 shadow-sm group-hover:shadow-md transition-shadow duration-300 ease-out">
+        {/* Skeleton Loader */}
+        {!isImageLoaded && (
+          <div className="absolute inset-0 bg-stone-200 animate-pulse" />
+        )}
+
+        {/* Main Image */}
         <img
           src={imageUrl}
           alt={imageAlt}
           loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          onLoad={() => setIsImageLoaded(true)}
+          className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
+            isImageLoaded ? "opacity-100" : "opacity-0"
+          }`}
         />
 
-        {/* "New" badge */}
+        {/* Premium Gradient Overlay on Hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-900/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+
+        {/* New Badge - Premium Pill */}
         {isNew && (
-          <span className="absolute top-3 left-3 px-3 py-1 bg-stone-900 text-white text-[10px] uppercase tracking-widest rounded-full">
+          <span className="absolute top-4 left-4 px-3.5 py-1.5 bg-stone-900 text-white text-[10px] font-medium uppercase tracking-widest rounded-full shadow-lg">
             New
           </span>
         )}
 
-        {/* Wishlist toggle */}
+        {/* Wishlist Button - Glassmorphism */}
         <button
-          onClick={() => setWishlisted((prev) => !prev)}
+          onClick={(e) => {
+            e.preventDefault();
+            setIsWishlisted((prev) => !prev);
+          }}
           aria-label={
-            wishlisted
+            isWishlisted
               ? `Remove ${name} from wishlist`
               : `Add ${name} to wishlist`
           }
-          aria-pressed={wishlisted}
-          className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white cursor-pointer"
+          aria-pressed={isWishlisted}
+          className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md border border-white/20 shadow-sm opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out hover:bg-white hover:scale-110 hover:shadow-lg cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`w-4 h-4 transition-colors duration-200 ${
-              wishlisted
-                ? "fill-rose-500 stroke-rose-500"
-                : "stroke-stone-500 fill-transparent"
+            className={`w-[18px] h-[18px] transition-all duration-200 ${
+              isWishlisted
+                ? "fill-rose-500 stroke-rose-500 scale-110"
+                : "fill-transparent stroke-stone-600"
             }`}
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -79,41 +117,48 @@ export default function ProductCard({
           </svg>
         </button>
 
-        {/* Quick-add overlay — slides up from bottom */}
-        <div className="absolute bottom-0 left-0 w-full px-4 pb-4 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out">
+        {/* Quick Add Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out">
           <button
-            onClick={onAddToCart}
+            onClick={(e) => {
+              e.preventDefault();
+              onAddToCart?.();
+            }}
             aria-label={`Add ${name} to cart`}
-            className="w-full py-3 bg-stone-900/90 backdrop-blur-sm text-white text-[11px] font-medium uppercase tracking-widest hover:bg-stone-900 transition-colors rounded-xl cursor-pointer"
+            className="w-full py-3.5 bg-stone-900/95 backdrop-blur-sm text-white text-[11px] font-medium uppercase tracking-widest hover:bg-stone-800 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] cursor-pointer"
           >
             Add to Cart
           </button>
         </div>
       </div>
 
-      {/* Product info */}
-      <div>
-        <p className="text-[11px] text-stone-400 uppercase tracking-widest mb-1.5">
+      {/* Product Info */}
+      <div className="space-y-2">
+        {/* Category */}
+        <p className="text-[11px] text-stone-400 uppercase tracking-[0.15em] font-medium">
           {category}
         </p>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="text-sm font-medium text-stone-900 leading-snug flex-1">
+
+        {/* Name & Price */}
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-[15px] font-normal text-stone-900 leading-snug flex-1 tracking-tight group-hover:text-stone-700 transition-colors duration-200">
             {name}
           </h3>
-          <span className="text-sm font-semibold text-stone-900 whitespace-nowrap">
-            ${price}
+          <span className="text-[15px] font-medium text-stone-900 whitespace-nowrap">
+            {formattedPrice}
           </span>
         </div>
 
-        {/* Star rating */}
+        {/* Rating */}
         {rating > 0 && (
           <div className="flex items-center gap-1.5" aria-label={ratingLabel}>
+            {/* Stars */}
             <div className="flex items-center gap-0.5" aria-hidden="true">
               {[1, 2, 3, 4, 5].map((star) => (
                 <svg
                   key={star}
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-3 h-3 ${
+                  className={`w-3.5 h-3.5 transition-colors duration-200 ${
                     star <= Math.round(rating)
                       ? "fill-amber-400 text-amber-400"
                       : "fill-stone-200 text-stone-200"
@@ -125,24 +170,27 @@ export default function ProductCard({
                 </svg>
               ))}
             </div>
+            {/* Review Count */}
             {reviewCount > 0 && (
-              <span className="text-[11px] text-stone-400">
+              <span className="text-[11px] text-stone-400 font-normal">
                 ({reviewCount})
               </span>
             )}
           </div>
         )}
       </div>
+
+      {/* Focus States for Accessibility */}
+      <style>{`
+        article:focus-within {
+          outline: none;
+        }
+        article:focus-within a:focus-visible,
+        article:focus-within button:focus-visible {
+          outline: 2px solid #1c1917;
+          outline-offset: 2px;
+        }
+      `}</style>
     </article>
   );
 }
-
-/* --- WHAT CHANGED ---
-  Added:      Wishlist toggle button (heart icon, aria-pressed, fill-rose-500 when active)
-              Star rating row with aria-label for screen readers
-              "New" badge pill (top-left, shown when isNew=true)
-  Design:     Rounded image container (rounded-2xl), image scale on hover (was opacity fade)
-              Quick-add slides from y+3 → 0 with ease-out (was translate-y-4)
-  Props:      rating, reviewCount, isNew, slug added (all optional)
-  SEO/a11y:   aria-pressed on wishlist, aria-label on all buttons, descriptive alt unchanged
-*/
