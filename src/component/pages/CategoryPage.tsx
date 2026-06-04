@@ -549,7 +549,8 @@ export default function CategoryPage() {
   const [cartCount] = useState(2);
 
   // State Sort menggunakan data union type agar aman
-  const [sortBy, setSortBy] = useState<(typeof SORT_OPTIONS)[number]["id"]>("featured");
+  const [sortBy, setSortBy] =
+    useState<(typeof SORT_OPTIONS)[number]["id"]>("featured");
 
   const sorted = [...products].sort((a, b) => {
     if (sortBy === "price-asc") return a.price - b.price;
@@ -737,15 +738,14 @@ export default function CategoryPage() {
               products
             </p>
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-              <SelectTrigger 
-                className="w-auto h-auto px-3 py-2 bg-transparent border-none shadow-none rounded-lg hover:bg-stone-100 focus:ring-0 focus:ring-offset-0 text-sm font-medium text-stone-700 data-[state=open]:bg-stone-100 transition-colors cursor-pointer"
-              >
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value as typeof sortBy)}
+            >
+              <SelectTrigger className="w-auto h-auto px-3 py-2 bg-transparent border-none shadow-none rounded-lg hover:bg-stone-100 focus:ring-0 focus:ring-offset-0 text-sm font-medium text-stone-700 data-[state=open]:bg-stone-100 transition-colors cursor-pointer">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4 text-stone-400" />
-                  <span className="font-normal text-stone-500">
-                    Sort by:
-                  </span>
+                  <span className="font-normal text-stone-500">Sort by:</span>
                   <span className="text-stone-900">
                     <SelectValue />
                   </span>
@@ -781,7 +781,7 @@ export default function CategoryPage() {
           >
             {sorted.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
-                {sorted.map((product) => (
+                {sorted.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     name={product.name}
@@ -793,6 +793,7 @@ export default function CategoryPage() {
                     reviewCount={product.reviewCount}
                     isNew={product.isNew}
                     slug={product.slug}
+                    index={index}
                   />
                 ))}
               </div>
