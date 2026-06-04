@@ -1,10 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  ShoppingCart,
-  Menu,
-  X,
-  Search,
   Truck,
   RefreshCw,
   Shield,
@@ -14,19 +10,12 @@ import FurnitureHeroSection from "../ui/FurnitureHeroSection";
 import CategoryCard from "../ui/CategoryCard";
 import FeaturedProductsSection from "../ui/FeaturedProductsSection";
 import Seo from "../ui/Seo";
+import Navbar from "../ui/Navbar";
+import { useCart } from "../../context/CartContext";
 
 import heroVideo from "../../assets/animate-bg.mp4";
 
 // ── Static data ─────────────────────────────────────────────────────────────
-
-const NAV_LINKS = [
-  "Living Room",
-  "Bedroom",
-  "Dining",
-  "Office",
-  "Outdoor",
-  "Sale",
-];
 
 const CATEGORIES = [
   {
@@ -194,117 +183,43 @@ const TRUST_ITEMS = [
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function FurnitureHome() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartCount] = useState(2);
+  const [cartMsg, setCartMsg] = useState("");
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
+
+  const handleAddToCart = async (productId: string) => {
+    if (!localStorage.getItem("auth_token")) {
+      navigate("/login");
+      return;
+    }
+    try {
+      await addToCart(productId);
+      setCartMsg("✓ Ditambahkan ke cart!");
+      setTimeout(() => setCartMsg(""), 2500);
+    } catch (err: any) {
+      setCartMsg(err.message || "Gagal menambah ke cart");
+      setTimeout(() => setCartMsg(""), 3000);
+    }
+  };
 
   return (
     <>
       <Seo
-        title="Norr Furniture"
+        title="BlockNest Furniture"
         description="Timeless Scandinavian furniture crafted from honest materials. Shop sofas, beds, dining tables, and more — free delivery on orders over $500."
         canonical="/"
         ogImage="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1200&q=80&fit=crop"
       />
       <div className="min-h-screen bg-stone-50 font-sans antialiased">
-        {/* ── Navbar ─────────────────────────────────────────────────────── */}
-        <header className="bg-white border-b border-stone-100 sticky top-0 z-50">
-          <nav
-            aria-label="Main navigation"
-            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8"
-          >
-            {/* Brand */}
-            <Link
-              to="/"
-              className="text-xl font-semibold tracking-tight text-stone-900 shrink-0"
-              aria-label="Norr — home"
-            >
-              Norr<span className="text-stone-400">.</span>
-            </Link>
+        {/* Cart toast notification */}
+        {cartMsg && (
+          <div className="fixed top-20 right-4 z-[100] px-4 py-3 bg-stone-900 text-white text-sm rounded-xl shadow-lg animate-[fadeIn_0.2s_ease-out]">
+            {cartMsg}
+          </div>
+        )}
 
-            {/* Desktop nav links */}
-            <ul className="hidden md:flex items-center gap-7">
-              {NAV_LINKS.map((link) => (
-                <li key={link}>
-                  <Link
-                    to={`/${link.toLowerCase().replaceAll(" ", "-")}`}
-                    className={`text-sm font-medium transition-colors duration-150 ${
-                      link === "Sale"
-                        ? "text-rose-600 hover:text-rose-700"
-                        : "text-stone-500 hover:text-stone-900"
-                    }`}
-                  >
-                    {link}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-
-            {/* Right actions */}
-            <div className="flex items-center gap-4">
-              {/* Search */}
-              <button
-                aria-label="Open search"
-                className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors duration-200 cursor-pointer"
-              >
-                <Search className="w-4.5 h-4.5" />
-              </button>
-
-              {/* Cart */}
-              <a
-                href="/cart"
-                aria-label={`Shopping cart — ${cartCount} items`}
-                className="relative flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors duration-200"
-              >
-                <ShoppingCart className="w-4.5 h-4.5" />
-                {cartCount > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-stone-900 text-white text-[9px] font-bold rounded-full flex items-center justify-center"
-                  >
-                    {cartCount}
-                  </span>
-                )}
-              </a>
-
-              {/* Mobile hamburger */}
-              <button
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileMenuOpen}
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                className="md:hidden flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 transition-colors duration-200 cursor-pointer"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5" />
-                ) : (
-                  <Menu className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </nav>
-
-          {/* Mobile menu drawer */}
-          {mobileMenuOpen && (
-            <div className="md:hidden bg-white border-t border-stone-100 px-4 pb-6 pt-4">
-              <ul className="flex flex-col gap-1">
-                {NAV_LINKS.map((link) => (
-                  <li key={link}>
-                    <Link
-                      to={`/${link.toLowerCase().replaceAll(" ", "-")}`}
-                      className={`block py-2.5 px-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                        link === "Sale"
-                          ? "text-rose-600 hover:bg-rose-50"
-                          : "text-stone-700 hover:bg-stone-50 hover:text-stone-900"
-                      }`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </header>
+        {/* ── Navbar (shared component) ──────────────────────────────────── */}
+        <Navbar />
 
         <main>
           {/* ── Hero ───────────────────────────────────────────────────────── */}
@@ -386,6 +301,7 @@ export default function FurnitureHome() {
               subtitle="Our latest pieces — each one considered, built to last, and ready to make a space feel like yours."
               products={FEATURED_PRODUCTS}
               viewAllHref="/new-arrivals"
+              onAddToCart={handleAddToCart}
             />
           </div>
 

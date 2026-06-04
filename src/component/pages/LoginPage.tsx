@@ -1,24 +1,23 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { authService } from "../../lib/authService";
+import { useAuth } from "../../context/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from || "/";
+  const { login } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,18 +32,22 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const response = await authService.login(
-        formData.email,
-        formData.password
-      );
+      const response = await authService.login(formData.email, formData.password);
 
       if (response.success && response.token) {
-        authService.saveToken(response.token);
-        setSuccess("Login berhasil! Mengalihkan ke home...");
-
-        setTimeout(() => {
-          navigate("/");
-        }, 1500);
+        const d = response.data;
+        const [firstName, ...rest] = (d.name || d.firstName || "").split(" ");
+        login(response.token, {
+          id: d.id,
+          name: d.name || `${d.firstName} ${d.lastName || ""}`.trim(),
+          email: d.email,
+          firstName: firstName || d.firstName,
+          lastName: rest.join(" ") || d.lastName,
+          phone: d.phone,
+          role: d.role,
+        });
+        setSuccess("Login berhasil! Mengalihkan...");
+        setTimeout(() => navigate(from, { replace: true }), 1000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
@@ -54,68 +57,76 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-          Masuk BlockNest
-        </h2>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Email Anda"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Password Anda"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded-md transition duration-200"
-          >
-            {loading ? "Memproses..." : "Masuk"}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-gray-600">
-          Belum punya akun?{" "}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Daftar di sini
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <Link to="/" className="text-2xl font-semibold tracking-tight text-stone-900">
+            Block<span className="text-stone-400">Nest</span>
           </Link>
-        </p>
+          <h2 className="text-xl font-light text-stone-700 mt-3">Masuk ke akun kamu</h2>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-8">
+          {error && (
+            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-5 p-3.5 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300"
+                placeholder="email@kamu.com"
+                autoComplete="email"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-stone-700">Password</label>
+                <Link to="/forgot-password" className="text-xs text-stone-500 hover:text-stone-900 hover:underline">
+                  Lupa password?
+                </Link>
+              </div>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-stone-200 rounded-xl text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300"
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-stone-900 hover:bg-stone-700 disabled:bg-stone-400 text-white font-medium text-sm rounded-xl transition-colors cursor-pointer"
+            >
+              {loading ? "Memproses..." : "Masuk"}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-sm text-stone-500">
+            Belum punya akun?{" "}
+            <Link to="/register" className="text-stone-900 font-medium hover:underline">
+              Daftar di sini
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

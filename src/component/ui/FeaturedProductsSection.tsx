@@ -19,6 +19,7 @@ interface FeaturedProductsSectionProps {
   subtitle?: string;
   products: Product[];
   viewAllHref?: string;
+  onAddToCart?: (productId: string) => void;
 }
 
 export default function FeaturedProductsSection({
@@ -26,6 +27,7 @@ export default function FeaturedProductsSection({
   subtitle,
   products,
   viewAllHref = "/products",
+  onAddToCart,
 }: Readonly<FeaturedProductsSectionProps>) {
   return (
     <section
@@ -63,6 +65,7 @@ export default function FeaturedProductsSection({
             reviewCount={product.reviewCount}
             isNew={product.isNew}
             slug={product.slug}
+            onAddToCart={onAddToCart ? () => onAddToCart(product.slug || String(product.id)) : undefined}
           />
         ))}
       </div>

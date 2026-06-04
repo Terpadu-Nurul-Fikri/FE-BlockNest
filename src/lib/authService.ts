@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3000";
+import { API_BASE_URL } from "./apiConfig";
 
 interface AuthResponse {
   success: boolean;
@@ -6,13 +6,22 @@ interface AuthResponse {
   data: {
     id: string;
     email: string;
+    name?: string;
     firstName: string;
     lastName?: string;
     phone?: string;
     role: string;
     createdAt?: string;
+    updatedAt?: string;
   };
   token?: string;
+}
+
+interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  resetToken?: string;
+  resetUrl?: string;
 }
 
 export const authService = {
@@ -52,6 +61,36 @@ export const authService = {
     return res.json();
   },
 
+  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+    const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Gagal meminta reset password");
+    }
+
+    return json;
+  },
+
+  async resetPassword(token: string, password: string): Promise<ForgotPasswordResponse> {
+    const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Gagal reset password");
+    }
+
+    return json;
+  },
+
   async getProfile(token: string): Promise<AuthResponse> {
     const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
       method: "GET",
@@ -83,5 +122,32 @@ export const authService = {
 
   isAuthenticated(): boolean {
     return !!localStorage.getItem("auth_token");
+  },
+
+  async updateProfile(
+    token: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      currentPassword?: string;
+      newPassword?: string;
+    }
+  ): Promise<AuthResponse> {
+    const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || "Gagal update profil");
+    }
+
+    return res.json();
   },
 };

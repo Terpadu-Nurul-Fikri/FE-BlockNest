@@ -1,16 +1,14 @@
 // src/component/pages/CategoryPage.tsx
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
-  ShoppingCart,
-  Menu,
-  X,
-  Search,
   ChevronRight,
   SlidersHorizontal,
 } from "lucide-react";
+import { useCart } from "../../context/CartContext";
 import { useState } from "react";
 import Seo from "../ui/Seo";
 import ProductCard from "../ui/ProductCard";
+import Navbar from "../ui/Navbar";
 import {
   Select,
   SelectContent,
@@ -540,15 +538,30 @@ const SORT_OPTIONS = [
 
 export default function CategoryPage() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const slug = pathname.replace(/^\//, "").split("/")[0] || "living-room";
 
   const meta = CATEGORY_META[slug] ?? CATEGORY_META["living-room"];
   const products = CATEGORY_PRODUCTS[slug] ?? [];
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartCount] = useState(2);
+  const [cartMsg, setCartMsg] = useState("");
+  const { addToCart } = useCart();
 
-  // State Sort menggunakan data union type agar aman
+  const handleAddToCart = async (productId: string) => {
+    if (!localStorage.getItem("auth_token")) {
+      navigate("/login");
+      return;
+    }
+    try {
+      await addToCart(productId);
+      setCartMsg("✓ Ditambahkan ke cart!");
+      setTimeout(() => setCartMsg(""), 2500);
+    } catch (err: any) {
+      setCartMsg(err.message || "Gagal menambah ke cart");
+      setTimeout(() => setCartMsg(""), 3000);
+    }
+  };
+
   const [sortBy, setSortBy] = useState<(typeof SORT_OPTIONS)[number]["id"]>("featured");
 
   const sorted = [...products].sort((a, b) => {
@@ -569,122 +582,15 @@ export default function CategoryPage() {
       />
 
       <div className="min-h-screen bg-stone-50 font-sans antialiased">
-        {/* ── Navbar ───────────────────────────────────────────────────── */}
-        <header className="bg-white border-b border-stone-100 sticky top-0 z-50">
-          <nav
-            aria-label="Main navigation"
-            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8"
-          >
-            <Link
-              to="/"
-              className="text-xl font-semibold tracking-tight text-stone-900 shrink-0"
-              aria-label="Norr — home"
-            >
-              Norr<span className="text-stone-400">.</span>
-            </Link>
+        {/* Cart toast notification */}
+        {cartMsg && (
+          <div className="fixed top-20 right-4 z-[100] px-4 py-3 bg-stone-900 text-white text-sm rounded-xl shadow-lg animate-[fadeIn_0.2s_ease-out]">
+            {cartMsg}
+          </div>
+        )}
 
-            <ul className="hidden md:flex items-center gap-7">
-              {NAV_LINKS.map((link) => {
-                const linkSlug = link.toLowerCase().replaceAll(" ", "-");
-                const isActive = linkSlug === slug;
-                const isSale = link === "Sale";
-                let desktopLinkClass: string;
-                if (isSale) {
-                  desktopLinkClass = isActive
-                    ? "text-rose-700 underline underline-offset-4"
-                    : "text-rose-600 hover:text-rose-700";
-                } else {
-                  desktopLinkClass = isActive
-                    ? "text-stone-900 underline underline-offset-4"
-                    : "text-stone-500 hover:text-stone-900";
-                }
-                return (
-                  <li key={link}>
-                    <Link
-                      to={`/${linkSlug}`}
-                      className={`text-sm font-medium transition-colors duration-150 ${desktopLinkClass}`}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="flex items-center gap-4">
-              <button
-                aria-label="Open search"
-                className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors duration-200 cursor-pointer"
-              >
-                <Search className="w-4.5 h-4.5" />
-              </button>
-
-              <Link
-                to="/cart"
-                aria-label={`Shopping cart — ${cartCount} items`}
-                className="relative flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors duration-200"
-              >
-                <ShoppingCart className="w-4.5 h-4.5" />
-                {cartCount > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-stone-900 text-white text-[9px] font-bold rounded-full flex items-center justify-center"
-                  >
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-
-              <button
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileMenuOpen}
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                className="md:hidden flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 transition-colors duration-200 cursor-pointer"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5" />
-                ) : (
-                  <Menu className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </nav>
-
-          {mobileMenuOpen && (
-            <div className="md:hidden bg-white border-t border-stone-100 px-4 pb-6 pt-4">
-              <ul className="flex flex-col gap-1">
-                {NAV_LINKS.map((link) => {
-                  const linkSlug = link.toLowerCase().replaceAll(" ", "-");
-                  const isActive = linkSlug === slug;
-                  const isSale = link === "Sale";
-                  let mobileLinkClass: string;
-                  if (isSale) {
-                    mobileLinkClass = isActive
-                      ? "text-rose-700 bg-rose-50"
-                      : "text-rose-600 hover:bg-rose-50";
-                  } else {
-                    mobileLinkClass = isActive
-                      ? "text-stone-900 bg-stone-100"
-                      : "text-stone-700 hover:bg-stone-50 hover:text-stone-900";
-                  }
-                  return (
-                    <li key={link}>
-                      <Link
-                        to={`/${linkSlug}`}
-                        aria-current={isActive ? "page" : undefined}
-                        className={`block py-2.5 px-3 rounded-lg text-sm font-medium transition-colors duration-150 ${mobileLinkClass}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        {link}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-        </header>
+        {/* ── Navbar (shared component) ─────────────────────────────────── */}
+        <Navbar />
 
         <main>
           {/* ── Category Hero ─────────────────────────────────────────── */}
@@ -735,10 +641,8 @@ export default function CategoryPage() {
                 {products.length}
               </span>{" "}
               products
-            </p>
-
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-              <SelectTrigger 
+            </p>            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+              <SelectTrigger
                 className="w-auto h-auto px-3 py-2 bg-transparent border-none shadow-none rounded-lg hover:bg-stone-100 focus:ring-0 focus:ring-offset-0 text-sm font-medium text-stone-700 data-[state=open]:bg-stone-100 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2">
@@ -793,6 +697,7 @@ export default function CategoryPage() {
                     reviewCount={product.reviewCount}
                     isNew={product.isNew}
                     slug={product.slug}
+                    onAddToCart={() => handleAddToCart(product.slug)}
                   />
                 ))}
               </div>
