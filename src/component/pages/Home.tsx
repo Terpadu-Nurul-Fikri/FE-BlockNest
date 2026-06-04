@@ -13,6 +13,7 @@ import {
 import FurnitureHeroSection from "../ui/FurnitureHeroSection";
 import CategoryCard from "../ui/CategoryCard";
 import FeaturedProductsSection from "../ui/FeaturedProductsSection";
+import BentoGrid, { DEMO_BENTO_ITEMS } from "../ui/BentoGrid";
 import Seo from "../ui/Seo";
 
 import heroVideo from "../../assets/animate-bg.mp4";
@@ -28,6 +29,7 @@ const NAV_LINKS = [
   "Sale",
 ];
 
+const top_bar = "For sale today 50% Disc";
 const CATEGORIES = [
   {
     name: "Sofas & Armchairs",
@@ -208,6 +210,16 @@ export default function FurnitureHome() {
       <div className="min-h-screen bg-stone-50 font-sans antialiased">
         {/* ── Navbar ─────────────────────────────────────────────────────── */}
         <header className="bg-white border-b border-stone-100 sticky top-0 z-50">
+          {top_bar && (
+            <div className="w-full bg-stone-900 text-white py-2 px-4 text-center text-xs tracking-widest uppercase font-medium">
+              <Link
+                to="/sale"
+                className="hover:text-stone-300 transition-colors duration-200"
+              >
+                {top_bar}
+              </Link>
+            </div>
+          )}
           <nav
             aria-label="Main navigation"
             className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8"
@@ -282,9 +294,9 @@ export default function FurnitureHome() {
             </div>
           </nav>
 
-          {/* Mobile menu drawer */}
+          {/* Mobile menu drawer - FIXED */}
           {mobileMenuOpen && (
-            <div className="md:hidden bg-white border-t border-stone-100 px-4 pb-6 pt-4">
+            <div className="absolute top-full left-0 w-full md:hidden bg-white border-b border-stone-100 shadow-lg px-4 pb-6 pt-4 z-40">
               <ul className="flex flex-col gap-1">
                 {NAV_LINKS.map((link) => (
                   <li key={link}>
@@ -366,7 +378,7 @@ export default function FurnitureHome() {
               </a>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {CATEGORIES.map((cat) => (
+              {CATEGORIES.map((cat, index) => (
                 <CategoryCard
                   key={cat.href}
                   name={cat.name}
@@ -374,6 +386,7 @@ export default function FurnitureHome() {
                   imageAlt={cat.imageAlt}
                   href={cat.href}
                   itemCount={cat.itemCount}
+                  index={index}
                 />
               ))}
             </div>
@@ -388,6 +401,9 @@ export default function FurnitureHome() {
               viewAllHref="/new-arrivals"
             />
           </div>
+
+          {/* ── Bento Grid: Curated Collections ───────────────────────────── */}
+          <BentoGrid items={DEMO_BENTO_ITEMS} />
 
           {/* ── Material Callout ───────────────────────────────────────────── */}
           <section
