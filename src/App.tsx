@@ -17,15 +17,6 @@ import { AdminProductList, AdminProductForm } from "./component/admin/AdminProdu
 import { AdminCategoryList, AdminCategoryForm } from "./component/admin/AdminCategories";
 import AdminOrders from "./component/admin/AdminOrders";
 
-const NAV_SLUGS = [
-  "living-room",
-  "bedroom",
-  "dining",
-  "office",
-  "outdoor",
-  "sale",
-];
-
 export default function App() {
   return (
     <Routes>
@@ -37,9 +28,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Category pages — public */}
-      {NAV_SLUGS.map((slug) => (
-        <Route key={slug} path={`/${slug}`} element={<CategoryPage />} />
-      ))}
+      <Route path="/:slug" element={<CategoryPage />} />
 
       {/* ── Protected routes (login required) ─────────────────────────── */}
       <Route path="/profile"  element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

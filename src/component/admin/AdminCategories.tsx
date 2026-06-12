@@ -125,6 +125,13 @@ const EMPTY: CategoryFormData = {
   seoDescription: "", heroImage: "", heroAlt: "", ogImage: "",
 };
 
+const toSlug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 export function AdminCategoryForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -154,19 +161,29 @@ export function AdminCategoryForm() {
   const set = (field: keyof CategoryFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
 
+  const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const label = e.target.value;
+    setForm((f) => ({
+      ...f,
+      label,
+      slug: !isEdit || !f.slug ? toSlug(label) : f.slug,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!form.slug || !form.label) {
-      setError("Slug dan label wajib diisi");
+    if (!form.label) {
+      setError("Label wajib diisi");
       return;
     }
     setSaving(true);
     try {
+      const payload = { ...form, slug: form.slug || toSlug(form.label) };
       if (isEdit) {
-        await categoryApi.update(id!, form);
+        await categoryApi.update(id!, payload);
       } else {
-        await categoryApi.create(form);
+        await categoryApi.create(payload);
       }
       navigate("/admin/categories");
     } catch (err) {
@@ -214,12 +231,16 @@ export function AdminCategoryForm() {
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 className="text-sm font-semibold text-stone-700 uppercase tracking-wider">Informasi Dasar</h2>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Label" field="label" placeholder="Living Room" required />
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1.5">Slug *</label>
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">Label *</label>
+                <input type="text" value={form.label} onChange={handleLabelChange} placeholder="Living Room" required
+                  className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-500 mb-1.5">Slug</label>
                 <input type="text" value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, "-") }))}
-                  placeholder="living-room" required
+                  onChange={(e) => setForm((f) => ({ ...f, slug: toSlug(e.target.value) }))}
+                  placeholder="otomatis dari label"
                   className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-stone-300" />
               </div>
             </div>

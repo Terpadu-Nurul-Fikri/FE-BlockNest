@@ -1,14 +1,15 @@
 // src/component/pages/CategoryPage.tsx
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight,
   SlidersHorizontal,
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
-import { useState } from "react";
 import Seo from "../ui/Seo";
 import ProductCard from "../ui/ProductCard";
 import Navbar from "../ui/Navbar";
+import { API_BASE_URL } from "../../lib/apiConfig";
 import {
   Select,
   SelectContent,
@@ -127,7 +128,7 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
 // ── Per-category product listings ────────────────────────────────────────────
 
 interface Product {
-  id: number;
+  id: number | string;
   name: string;
   price: number;
   category: string;
@@ -137,6 +138,14 @@ interface Product {
   reviewCount: number;
   isNew: boolean;
   slug: string;
+}
+
+interface CategoryApiResponse {
+  success: boolean;
+  data: {
+    meta: CategoryMeta;
+    products: Product[];
+  };
 }
 
 const CATEGORY_PRODUCTS: Record<string, Product[]> = {
@@ -537,15 +546,48 @@ const SORT_OPTIONS = [
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function CategoryPage() {
-  const { pathname } = useLocation();
+  const { slug: routeSlug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const slug = pathname.replace(/^\//, "").split("/")[0] || "living-room";
+  const slug = routeSlug || "living-room";
 
-  const meta = CATEGORY_META[slug] ?? CATEGORY_META["living-room"];
-  const products = CATEGORY_PRODUCTS[slug] ?? [];
+  const [meta, setMeta] = useState<CategoryMeta>(CATEGORY_META[slug] ?? CATEGORY_META["living-room"]);
+  const [products, setProducts] = useState<Product[]>(CATEGORY_PRODUCTS[slug] ?? []);
+  const [loadingCategory, setLoadingCategory] = useState(true);
+  const [categoryError, setCategoryError] = useState("");
 
   const [cartMsg, setCartMsg] = useState("");
   const { addToCart } = useCart();
+
+  useEffect(() => {
+    let active = true;
+    setLoadingCategory(true);
+    setCategoryError("");
+
+    fetch(`${API_BASE_URL}/api/category/${slug}`)
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || "Kategori tidak ditemukan");
+        return json as CategoryApiResponse;
+      })
+      .then((json) => {
+        if (!active) return;
+        setMeta(json.data.meta);
+        setProducts(json.data.products);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setMeta(CATEGORY_META[slug] ?? CATEGORY_META["living-room"]);
+        setProducts(CATEGORY_PRODUCTS[slug] ?? []);
+        setCategoryError(err instanceof Error ? err.message : "Gagal memuat kategori");
+      })
+      .finally(() => {
+        if (active) setLoadingCategory(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [slug]);
 
   const handleAddToCart = async (productId: string) => {
     if (!localStorage.getItem("auth_token")) {
@@ -593,6 +635,11 @@ export default function CategoryPage() {
         <Navbar />
 
         <main>
+          {categoryError && (
+            <div className="bg-amber-50 border-b border-amber-100 px-4 py-3 text-center text-sm text-amber-700">
+              {categoryError}
+            </div>
+          )}
           {/* ── Category Hero ─────────────────────────────────────────── */}
           <section
             aria-label={`${meta.label} hero`}
@@ -704,7 +751,7 @@ export default function CategoryPage() {
             ) : (
               <div className="py-24 text-center">
                 <p className="text-stone-400 text-sm">
-                  No products found in this category.
+                  {loadingCategory ? "Memuat produk..." : "No products found in this category."}
                 </p>
               </div>
             )}
