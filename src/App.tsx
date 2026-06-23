@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "./component/pages/Home";
 import CategoryPage from "./component/pages/CategoryPage";
+import ProductDetailPage from "./component/pages/ProductDetailPage";
 import RegisterPage from "./component/pages/RegisterPage";
 import LoginPage from "./component/pages/LoginPage";
 import ForgotPasswordPage from "./component/pages/ForgotPasswordPage";
@@ -26,6 +27,9 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      {/* Product detail — must be before /:slug to avoid conflict */}
+      <Route path="/products/:slug" element={<ProductDetailPage />} />
 
       {/* Category pages — public */}
       <Route path="/:slug" element={<CategoryPage />} />

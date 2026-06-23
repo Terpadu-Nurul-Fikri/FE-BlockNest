@@ -1,5 +1,6 @@
 // Premium ProductCard with high-end agency aesthetics
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 interface ProductCardProps {
   name: string;
@@ -24,6 +25,7 @@ export default function ProductCard({
   rating = 0,
   reviewCount = 0,
   isNew = false,
+  slug,
   onAddToCart,
   index = 0,
 }: Readonly<ProductCardProps>) {
@@ -50,12 +52,14 @@ export default function ProductCard({
   }).format(price);
 
   return (
-    <article
-      className={`group relative transition-all duration-500 ease-out ${
+    <Link
+      to={slug ? `/products/${slug}` : "#"}
+      className={`group relative transition-all duration-500 ease-out block ${
         isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}
       style={{ transitionDelay: `${index * 60}ms` }}
     >
+      <article>
       {/* Image Container */}
       <div className="relative overflow-hidden rounded-2xl bg-stone-100 aspect-[4/5] mb-4 shadow-sm group-hover:shadow-md transition-shadow duration-300 ease-out">
         {/* Skeleton Loader */}
@@ -88,6 +92,7 @@ export default function ProductCard({
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             setIsWishlisted((prev) => !prev);
           }}
           aria-label={
@@ -122,6 +127,7 @@ export default function ProductCard({
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onAddToCart?.();
             }}
             aria-label={`Add ${name} to cart`}
@@ -191,6 +197,7 @@ export default function ProductCard({
           outline-offset: 2px;
         }
       `}</style>
-    </article>
+      </article>
+    </Link>
   );
 }
