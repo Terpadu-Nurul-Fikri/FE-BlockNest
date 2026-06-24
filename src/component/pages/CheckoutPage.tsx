@@ -1,14 +1,66 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ShoppingBag, CheckCircle, ArrowLeft } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { authService } from "../../lib/authService";
 import { API_BASE_URL } from "../../lib/apiConfig";
 
+interface BuyNowItem {
+  productId: string;
+  quantity: number;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: string;
+    subCategory?: string;
+    images: { imageUrl: string; imageAlt?: string }[];
+  };
+}
+
+interface CheckoutItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  product: {
+    name: string;
+    price: string;
+    subCategory?: string;
+    images: { imageUrl: string; imageAlt?: string }[];
+  };
+}
+
 export default function CheckoutPage() {
   const { items, totalItems, totalPrice, clearCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const isLoggedIn = authService.isAuthenticated();
+
+  const buyNowItem = (location.state as { buyNowItem?: BuyNowItem } | null)
+    ?.buyNowItem ?? null;
+
+  const isBuyNow = buyNowItem !== null;
+
+  const displayItems: CheckoutItem[] = isBuyNow
+    ? [
+        {
+          id: buyNowItem.productId,
+          productId: buyNowItem.productId,
+          quantity: buyNowItem.quantity,
+          product: buyNowItem.product,
+        },
+      ]
+    : items;
+
+  const displayTotalPrice = displayItems.reduce(
+    (sum, item) => sum + parseFloat(item.product.price) * item.quantity,
+    0,
+  );
+
+  const displayTotalItems = displayItems.reduce(
+    (sum, item) => sum + item.quantity,
+    0,
+  );
 
   const [form, setForm] = useState({
     shippingAddress: "",
@@ -24,7 +76,7 @@ export default function CheckoutPage() {
     return null;
   }
 
-  if (items.length === 0 && !success) {
+  if (displayItems.length === 0 && !success) {
     return (
       <div className="min-h-screen bg-stone-50 flex flex-col">
         <header className="bg-white border-b border-stone-100 sticky top-0 z-50">
@@ -94,7 +146,7 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       const token = authService.getToken();
-      const orderItems = items.map((item) => ({
+      const orderItems = displayItems.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
       }));
@@ -120,8 +172,10 @@ export default function CheckoutPage() {
       const json = await res.json();
       setOrderId(json.data.id);
 
-      // Clear cart after successful order
-      await clearCart();
+      // Only clear cart if this was a Cart checkout, not Buy Now
+      if (!isBuyNow) {
+        await clearCart();
+      }
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan");
@@ -138,14 +192,20 @@ export default function CheckoutPage() {
           <Link to="/" className="text-xl font-semibold tracking-tight text-stone-900">
             Block<span className="text-stone-400">Nest</span>
           </Link>
-          <Link to="/cart" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Kembali ke Cart
+          <Link
+            to={isBuyNow && buyNowItem ? `/products/${buyNowItem.product.slug}` : "/cart"}
+            className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {isBuyNow ? "Kembali ke Produk" : "Kembali ke Cart"}
           </Link>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-2xl font-light text-stone-900 mb-8">Checkout</h1>
+        <h1 className="text-2xl font-light text-stone-900 mb-8">
+          Checkout {isBuyNow && "(Buy Now)"}
+        </h1>
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
@@ -184,7 +244,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="w-full py-4 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-              {loading ? "Memproses..." : `Buat Pesanan — $${totalPrice.toLocaleString()}`}
+              {loading ? "Memproses..." : `Buat Pesanan — $${displayTotalPrice.toLocaleString()}`}
             </button>
           </form>
 
@@ -192,10 +252,10 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
               <h2 className="text-base font-medium text-stone-900 mb-4">
-                Ringkasan ({totalItems} item)
+                Ringkasan ({displayTotalItems} item)
               </h2>
               <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                {items.map((item) => {
+                {displayItems.map((item) => {
                   const image = item.product.images?.[0];
                   const price = parseFloat(item.product.price);
                   return (
@@ -223,7 +283,7 @@ export default function CheckoutPage() {
               <div className="border-t border-stone-100 pt-4 space-y-2 text-sm">
                 <div className="flex justify-between text-stone-600">
                   <span>Subtotal</span>
-                  <span>${totalPrice.toLocaleString()}</span>
+                  <span>${displayTotalPrice.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-stone-600">
                   <span>Pengiriman</span>
@@ -231,7 +291,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-semibold text-stone-900 pt-2 border-t border-stone-100">
                   <span>Total</span>
-                  <span>${totalPrice.toLocaleString()}</span>
+                  <span>${displayTotalPrice.toLocaleString()}</span>
                 </div>
               </div>
             </div>
