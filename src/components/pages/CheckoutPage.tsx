@@ -4,6 +4,7 @@ import { ShoppingBag, CheckCircle, ArrowLeft } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { authService } from "../../lib/authService";
 import { API_BASE_URL } from "../../lib/apiConfig";
+import { formatIDR } from "../../lib/utils";
 
 export default function CheckoutPage() {
   const { items, totalItems, totalPrice, clearCart } = useCart();
@@ -184,7 +185,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="w-full py-4 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-              {loading ? "Memproses..." : `Buat Pesanan — $${totalPrice.toLocaleString()}`}
+              {loading ? "Memproses..." : `Buat Pesanan — ${formatIDR(totalPrice)}`}
             </button>
           </form>
 
@@ -214,7 +215,7 @@ export default function CheckoutPage() {
                         <p className="text-xs text-stone-400">Qty: {item.quantity}</p>
                       </div>
                       <p className="text-sm font-medium text-stone-900 shrink-0">
-                        ${(price * item.quantity).toLocaleString()}
+                        {formatIDR(price * item.quantity)}
                       </p>
                     </div>
                   );
@@ -223,7 +224,7 @@ export default function CheckoutPage() {
               <div className="border-t border-stone-100 pt-4 space-y-2 text-sm">
                 <div className="flex justify-between text-stone-600">
                   <span>Subtotal</span>
-                  <span>${totalPrice.toLocaleString()}</span>
+                  <span>{formatIDR(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-stone-600">
                   <span>Pengiriman</span>
@@ -231,7 +232,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-semibold text-stone-900 pt-2 border-t border-stone-100">
                   <span>Total</span>
-                  <span>${totalPrice.toLocaleString()}</span>
+                  <span>{formatIDR(totalPrice)}</span>
                 </div>
               </div>
             </div>

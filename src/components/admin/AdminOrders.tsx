@@ -16,6 +16,7 @@ import {
   type AdminOrder,
   type OrderUpdateData,
 } from "../../lib/adminService";
+import { formatIDR } from "../../lib/utils";
 
 type EditForm = {
   shippingAddress: string;
@@ -231,7 +232,7 @@ export default function AdminOrders() {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <p className="text-sm font-semibold text-stone-900">
-                        Rp {parseFloat(order.totalAmount).toLocaleString("id-ID")}
+                        {formatIDR(parseFloat(order.totalAmount))}
                       </p>
                       <ChevronRight
                         className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${
@@ -361,7 +362,7 @@ export default function AdminOrders() {
                               <div className="flex items-center gap-4 text-stone-500 shrink-0">
                                 <span>x{item.quantity}</span>
                                 <span className="font-medium text-stone-800">
-                                  Rp {(parseFloat(item.price) * item.quantity).toLocaleString("id-ID")}
+                          <span>{formatIDR(parseFloat(item.price) * item.quantity)}</span>
                                 </span>
                               </div>
                             </div>
@@ -369,7 +370,7 @@ export default function AdminOrders() {
                         </div>
                         <div className="flex justify-between font-semibold text-stone-900 pt-3 mt-3 border-t border-stone-100">
                           <span>Total</span>
-                          <span>Rp {parseFloat(order.totalAmount).toLocaleString("id-ID")}</span>
+                          <span>{formatIDR(parseFloat(order.totalAmount))}</span>
                         </div>
                       </div>
 

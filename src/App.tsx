@@ -1,21 +1,30 @@
 import { Routes, Route } from "react-router-dom";
-import Home from "./component/pages/Home";
-import CategoryPage from "./component/pages/CategoryPage";
-import RegisterPage from "./component/pages/RegisterPage";
-import LoginPage from "./component/pages/LoginPage";
-import ForgotPasswordPage from "./component/pages/ForgotPasswordPage";
-import ResetPasswordPage from "./component/pages/ResetPasswordPage";
-import ProfilePage from "./component/pages/ProfilePage";
-import CartPage from "./component/pages/CartPage";
-import CheckoutPage from "./component/pages/CheckoutPage";
-import OrdersPage from "./component/pages/OrdersPage";
-import ProtectedRoute from "./component/ProtectedRoute";
+import Home from "./components/pages/Home";
+import CategoryPage from "./components/pages/CategoryPage";
+import RegisterPage from "./components/pages/RegisterPage";
+import LoginPage from "./components/pages/LoginPage";
+import ForgotPasswordPage from "./components/pages/ForgotPasswordPage";
+import ResetPasswordPage from "./components/pages/ResetPasswordPage";
+import ProfilePage from "./components/pages/ProfilePage";
+import CartPage from "./components/pages/CartPage";
+import CheckoutPage from "./components/pages/CheckoutPage";
+import OrdersPage from "./components/pages/OrdersPage";
+import ProductDetailPage from "./components/pages/ProductDetailPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin pages
-import AdminDashboard from "./component/admin/AdminDashboard";
-import { AdminProductList, AdminProductForm } from "./component/admin/AdminProducts";
-import { AdminCategoryList, AdminCategoryForm } from "./component/admin/AdminCategories";
-import AdminOrders from "./component/admin/AdminOrders";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import {
+  AdminProductList,
+  AdminProductForm,
+} from "./components/admin/AdminProducts";
+import {
+  AdminCategoryList,
+  AdminCategoryForm,
+} from "./components/admin/AdminCategories";
+import AdminOrders from "./components/admin/AdminOrders";
+import AdminBanners from "./components/admin/AdminBanners";
+import AdminReviews from "./components/admin/AdminReviews";
 
 export default function App() {
   return (
@@ -26,28 +35,131 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/product/:slug" element={<ProductDetailPage />} />
 
       {/* Category pages — public */}
       <Route path="/:slug" element={<CategoryPage />} />
 
       {/* ── Protected routes (login required) ─────────────────────────── */}
-      <Route path="/profile"  element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/orders"   element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-      <Route path="/cart"     element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-      <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orders"
+        element={
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cart"
+        element={
+          <ProtectedRoute>
+            <CartPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute>
+            <CheckoutPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ── Admin routes (ADMIN role only) ────────────────────────────── */}
-      <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/admin/products" element={<ProtectedRoute adminOnly><AdminProductList /></ProtectedRoute>} />
-      <Route path="/admin/products/new" element={<ProtectedRoute adminOnly><AdminProductForm /></ProtectedRoute>} />
-      <Route path="/admin/products/:id/edit" element={<ProtectedRoute adminOnly><AdminProductForm /></ProtectedRoute>} />
+      <Route
+        path="/admin/products"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminProductList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/products/new"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminProductForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/products/:id/edit"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminProductForm />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/admin/categories" element={<ProtectedRoute adminOnly><AdminCategoryList /></ProtectedRoute>} />
-      <Route path="/admin/categories/new" element={<ProtectedRoute adminOnly><AdminCategoryForm /></ProtectedRoute>} />
-      <Route path="/admin/categories/:id/edit" element={<ProtectedRoute adminOnly><AdminCategoryForm /></ProtectedRoute>} />
+      <Route
+        path="/admin/categories"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminCategoryList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/categories/new"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminCategoryForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/categories/:id/edit"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminCategoryForm />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/admin/orders" element={<ProtectedRoute adminOnly><AdminOrders /></ProtectedRoute>} />
+      <Route
+        path="/admin/orders"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminOrders />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/banners"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminBanners />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/reviews"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminReviews />
+          </ProtectedRoute>
+        }
+      />
 
       {/* 404 fallback */}
       <Route path="*" element={<Home />} />

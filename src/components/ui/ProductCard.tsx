@@ -1,5 +1,7 @@
 // Premium ProductCard with high-end agency aesthetics
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { formatIDR } from "../../lib/utils";
 
 interface ProductCardProps {
   name: string;
@@ -24,6 +26,7 @@ export default function ProductCard({
   rating = 0,
   reviewCount = 0,
   isNew = false,
+  slug,
   onAddToCart,
   index = 0,
 }: Readonly<ProductCardProps>) {
@@ -42,12 +45,7 @@ export default function ProductCard({
       ? `Rated ${rating} out of 5, ${reviewCount} reviews`
       : `Rated ${rating} out of 5`;
 
-  // Format price with currency
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-  }).format(price);
+  const formattedPrice = formatIDR(price);
 
   return (
     <article
@@ -64,22 +62,36 @@ export default function ProductCard({
         )}
 
         {/* Main Image */}
-        <img
-          src={imageUrl}
-          alt={imageAlt}
-          loading="lazy"
-          onLoad={() => setIsImageLoaded(true)}
-          className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
-            isImageLoaded ? "opacity-100" : "opacity-0"
-          }`}
-        />
+        {slug ? (
+          <Link to={`/product/${slug}`} className="absolute inset-0 z-0">
+            <img
+              src={imageUrl}
+              alt={imageAlt}
+              loading="lazy"
+              onLoad={() => setIsImageLoaded(true)}
+              className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
+                isImageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </Link>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={imageAlt}
+            loading="lazy"
+            onLoad={() => setIsImageLoaded(true)}
+            className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
+              isImageLoaded ? "opacity-100" : "opacity-0"
+            }`}
+          />
+        )}
 
         {/* Premium Gradient Overlay on Hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-900/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out" />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-900/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none" />
 
         {/* New Badge - Premium Pill */}
         {isNew && (
-          <span className="absolute top-4 left-4 px-3.5 py-1.5 bg-stone-900 text-white text-[10px] font-medium uppercase tracking-widest rounded-full shadow-lg">
+          <span className="absolute top-4 left-4 px-3.5 py-1.5 bg-stone-900 text-white text-[10px] font-medium uppercase tracking-widest rounded-full shadow-lg pointer-events-none">
             New
           </span>
         )}
@@ -88,6 +100,7 @@ export default function ProductCard({
         <button
           onClick={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             setIsWishlisted((prev) => !prev);
           }}
           aria-label={
@@ -96,11 +109,11 @@ export default function ProductCard({
               : `Add ${name} to wishlist`
           }
           aria-pressed={isWishlisted}
-          className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md border border-white/20 shadow-sm opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out hover:bg-white hover:scale-110 hover:shadow-lg cursor-pointer"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md border border-white/20 shadow-sm opacity-100 lg:opacity-0 lg:translate-y-2 lg:group-hover:opacity-100 lg:group-hover:translate-y-0 transition-all duration-300 ease-out hover:bg-white hover:scale-110 hover:shadow-lg cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`w-[18px] h-[18px] transition-all duration-200 ${
+            className={`w-[14px] h-[14px] sm:w-[18px] sm:h-[18px] transition-all duration-200 ${
               isWishlisted
                 ? "fill-rose-500 stroke-rose-500 scale-110"
                 : "fill-transparent stroke-stone-600"
@@ -118,14 +131,15 @@ export default function ProductCard({
         </button>
 
         {/* Quick Add Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 translate-y-3 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out">
+        <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 z-10 opacity-100 lg:opacity-0 lg:translate-y-3 lg:group-hover:opacity-100 lg:group-hover:translate-y-0 transition-all duration-300 ease-out">
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               onAddToCart?.();
             }}
             aria-label={`Add ${name} to cart`}
-            className="w-full py-3.5 bg-stone-900/95 backdrop-blur-sm text-white text-[11px] font-medium uppercase tracking-widest hover:bg-stone-800 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] cursor-pointer"
+            className="w-full py-2 sm:py-3.5 bg-stone-900/95 backdrop-blur-sm text-white text-[10px] sm:text-[11px] font-medium uppercase tracking-widest hover:bg-stone-800 transition-all duration-200 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] cursor-pointer"
           >
             Add to Cart
           </button>
@@ -134,20 +148,41 @@ export default function ProductCard({
 
       {/* Product Info */}
       <div className="space-y-2">
-        {/* Category */}
-        <p className="text-[11px] text-stone-400 uppercase tracking-[0.15em] font-medium">
-          {category}
-        </p>
+        {slug ? (
+          <Link to={`/product/${slug}`} className="block group/link space-y-2">
+            {/* Category */}
+            <p className="text-[9px] sm:text-[11px] text-stone-400 uppercase tracking-[0.15em] font-medium">
+              {category}
+            </p>
 
-        {/* Name & Price */}
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[15px] font-normal text-stone-900 leading-snug flex-1 tracking-tight group-hover:text-stone-700 transition-colors duration-200">
-            {name}
-          </h3>
-          <span className="text-[15px] font-medium text-stone-900 whitespace-nowrap">
-            {formattedPrice}
-          </span>
-        </div>
+            {/* Name & Price */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-3">
+              <h3 className="text-[13px] sm:text-[15px] font-normal text-stone-900 leading-snug flex-1 tracking-tight group-hover:text-stone-700 group-hover/link:text-stone-700 transition-colors duration-200">
+                {name}
+              </h3>
+              <span className="text-[13px] sm:text-[15px] font-medium text-stone-900 whitespace-nowrap">
+                {formattedPrice}
+              </span>
+            </div>
+          </Link>
+        ) : (
+          <>
+            {/* Category */}
+            <p className="text-[9px] sm:text-[11px] text-stone-400 uppercase tracking-[0.15em] font-medium">
+              {category}
+            </p>
+
+            {/* Name & Price */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-3">
+              <h3 className="text-[13px] sm:text-[15px] font-normal text-stone-900 leading-snug flex-1 tracking-tight group-hover:text-stone-700 transition-colors duration-200">
+                {name}
+              </h3>
+              <span className="text-[13px] sm:text-[15px] font-medium text-stone-900 whitespace-nowrap">
+                {formattedPrice}
+              </span>
+            </div>
+          </>
+        )}
 
         {/* Rating */}
         {rating > 0 && (
@@ -158,7 +193,7 @@ export default function ProductCard({
                 <svg
                   key={star}
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-3.5 h-3.5 transition-colors duration-200 ${
+                  className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-colors duration-200 ${
                     star <= Math.round(rating)
                       ? "fill-amber-400 text-amber-400"
                       : "fill-stone-200 text-stone-200"

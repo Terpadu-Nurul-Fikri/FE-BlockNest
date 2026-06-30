@@ -20,6 +20,11 @@ const LoginPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const getRedirectPath = (role?: string) => {
+    if (role === "ADMIN") return "/admin";
+    return from.startsWith("/admin") ? "/" : from;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -47,7 +52,7 @@ const LoginPage = () => {
           role: d.role,
         });
         setSuccess("Login berhasil! Mengalihkan...");
-        setTimeout(() => navigate(from, { replace: true }), 1000);
+        setTimeout(() => navigate(getRedirectPath(d.role), { replace: true }), 1000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");
