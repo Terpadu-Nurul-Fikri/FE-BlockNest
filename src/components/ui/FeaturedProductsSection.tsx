@@ -1,11 +1,11 @@
 import ProductCard from "./ProductCard";
 
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   category: string;
-  description: string;
+  description?: string;
   imageUrl: string;
   imageAlt: string;
   rating?: number;

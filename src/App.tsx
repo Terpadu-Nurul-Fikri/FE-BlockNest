@@ -12,7 +12,6 @@ import OrdersPage from "./components/pages/OrdersPage";
 import ProductDetailPage from "./components/pages/ProductDetailPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Admin pages
 import AdminDashboard from "./components/admin/AdminDashboard";
 import {
   AdminProductList,
@@ -29,18 +28,16 @@ import AdminReviews from "./components/admin/AdminReviews";
 export default function App() {
   return (
     <Routes>
-      {/* ── Public routes ─────────────────────────────────────────────── */}
       <Route path="/" element={<Home />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/product/:slug" element={<ProductDetailPage />} />
+      <Route path="/products/:slug" element={<ProductDetailPage />} />
 
-      {/* Category pages — public */}
       <Route path="/:slug" element={<CategoryPage />} />
 
-      {/* ── Protected routes (login required) ─────────────────────────── */}
       <Route
         path="/profile"
         element={
@@ -74,7 +71,6 @@ export default function App() {
         }
       />
 
-      {/* ── Admin routes (ADMIN role only) ────────────────────────────── */}
       <Route
         path="/admin"
         element={
@@ -83,7 +79,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/admin/products"
         element={
@@ -142,7 +137,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/admin/banners"
         element={
@@ -151,7 +145,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/admin/reviews"
         element={
@@ -161,7 +154,6 @@ export default function App() {
         }
       />
 
-      {/* 404 fallback */}
       <Route path="*" element={<Home />} />
     </Routes>
   );

@@ -68,7 +68,7 @@ interface ReviewEligibility {
   hasReviewed: boolean;
 }
 
-const DEFAULT_DESCRIPTION = 
+const DEFAULT_DESCRIPTION =
   "Designed in Oslo, this piece represents classic Scandinavian simplicity. Combining clean architectural lines with superb craftsmanship, it is made from honest, sustainably sourced solid wood and natural materials. Built to stand the test of time both structurally and aesthetically.";
 
 export default function ProductDetailPage() {
@@ -90,7 +90,6 @@ export default function ProductDetailPage() {
   const [cartMsg, setCartMsg] = useState("");
   const [cartLoading, setCartLoading] = useState(false);
 
-  // Review Form States
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -132,7 +131,8 @@ export default function ProductDetailPage() {
       })
       .catch((err) => {
         if (!active) return;
-        setError(err.message || "Gagal memuat detail produk");
+        const message = err instanceof Error ? err.message : "Gagal memuat detail produk";
+        setError(message);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -143,6 +143,10 @@ export default function ProductDetailPage() {
     };
   }, [slug, token]);
 
+  useEffect(() => {
+    setQuantity(1);
+  }, [slug]);
+
   const handleAddToCart = async () => {
     if (!isLoggedIn) {
       navigate("/login");
@@ -152,11 +156,8 @@ export default function ProductDetailPage() {
 
     setCartLoading(true);
     try {
-      // Loop addToCart based on quantity
-      for (let i = 0; i < quantity; i++) {
-        await addToCart(product.id);
-      }
-      setCartMsg(`✓ ${quantity} item berhasil ditambahkan ke keranjang!`);
+      await addToCart(product.id, quantity);
+      setCartMsg(`${quantity} item berhasil ditambahkan ke keranjang!`);
       setTimeout(() => setCartMsg(""), 3000);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Gagal menambah ke keranjang";
@@ -165,6 +166,34 @@ export default function ProductDetailPage() {
     } finally {
       setCartLoading(false);
     }
+  };
+
+  const handleBuyNow = () => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+    if (!product) return;
+
+    navigate("/checkout", {
+      state: {
+        buyNowItem: {
+          productId: product.id,
+          quantity,
+          product: {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: String(product.price),
+            subCategory: product.categoryDetail?.label || product.category,
+            images: product.images.map((img) => ({
+              imageUrl: img.imageUrl,
+              imageAlt: img.imageAlt,
+            })),
+          },
+        },
+      },
+    });
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -190,7 +219,6 @@ export default function ProductDetailPage() {
       setComment("");
       setRating(0);
 
-      // Refresh product data
       const res = await fetch(`${API_BASE_URL}/api/products/detail/${slug}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -265,7 +293,6 @@ export default function ProductDetailPage() {
         ogImage={product.imageUrl}
       />
       <div className="min-h-screen bg-stone-50 font-sans antialiased text-stone-900">
-        {/* Toast Notification */}
         {cartMsg && (
           <div className="fixed top-20 right-4 z-[100] px-4 py-3 bg-stone-900 text-white text-sm rounded-xl shadow-lg animate-[fadeIn_0.2s_ease-out]">
             {cartMsg}
@@ -276,7 +303,6 @@ export default function ProductDetailPage() {
         <Navbar />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="mb-8">
             <ol className="flex flex-wrap items-center gap-1.5 text-xs text-stone-400">
               <li>
@@ -308,9 +334,7 @@ export default function ProductDetailPage() {
             </ol>
           </nav>
 
-          {/* Product details section */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 mb-20">
-            {/* Gallery Column */}
             <div className="lg:col-span-7 space-y-4">
               <div className="overflow-hidden rounded-2xl bg-stone-100 aspect-[4/5] shadow-sm relative border border-stone-200/50">
                 <img
@@ -325,12 +349,11 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Thumbnails strip */}
               {product.images?.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2">
                   {product.images.map((img, i) => (
                     <button
-                      key={i}
+                      key={`${img.imageUrl}-${i}`}
                       onClick={() => setSelectedImage(img.imageUrl)}
                       className={`w-20 h-20 rounded-xl overflow-hidden bg-stone-100 border-2 shrink-0 transition-all ${
                         selectedImage === img.imageUrl
@@ -340,7 +363,7 @@ export default function ProductDetailPage() {
                     >
                       <img
                         src={img.imageUrl}
-                        alt={`${product.name} view ${i + 1}`}
+                        alt={img.imageAlt || `${product.name} view ${i + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -349,7 +372,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Info & Cart Actions Column */}
             <div className="lg:col-span-5 flex flex-col justify-start space-y-8">
               <div className="space-y-4">
                 <p className="text-xs uppercase tracking-widest text-stone-400 font-semibold">
@@ -359,7 +381,6 @@ export default function ProductDetailPage() {
                   {product.name}
                 </h1>
 
-                {/* Rating average preview */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-0.5">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -383,7 +404,6 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* Price */}
               <div className="py-2 border-t border-b border-stone-100 flex items-center justify-between">
                 <span className="text-2xl font-semibold text-stone-900">
                   {formatIDR(product.price)}
@@ -399,12 +419,10 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              {/* Description */}
               <p className="text-sm text-stone-500 leading-relaxed font-light">
                 {DEFAULT_DESCRIPTION}
               </p>
 
-              {/* Trust badges */}
               <div className="grid grid-cols-3 gap-4 pt-2 text-stone-500">
                 <div className="flex flex-col items-center text-center p-3 rounded-xl bg-stone-100/50 border border-stone-200/20">
                   <Truck className="w-5 h-5 text-stone-700 mb-1" />
@@ -426,10 +444,8 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* Actions */}
               {product.stockQuantity > 0 ? (
                 <div className="space-y-4">
-                  {/* Quantity selector */}
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-stone-400 uppercase tracking-widest font-semibold">
                       Jumlah:
@@ -437,8 +453,9 @@ export default function ProductDetailPage() {
                     <div className="flex items-center border border-stone-200 rounded-xl bg-white">
                       <button
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        className="px-3.5 py-2 text-stone-500 hover:text-stone-900 transition-colors"
+                        className="px-3.5 py-2 text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-40"
                         disabled={quantity <= 1}
+                        aria-label="Kurangi jumlah"
                       >
                         -
                       </button>
@@ -449,8 +466,9 @@ export default function ProductDetailPage() {
                         onClick={() =>
                           setQuantity((q) => Math.min(product.stockQuantity, q + 1))
                         }
-                        className="px-3.5 py-2 text-stone-500 hover:text-stone-900 transition-colors"
+                        className="px-3.5 py-2 text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-40"
                         disabled={quantity >= product.stockQuantity}
+                        aria-label="Tambah jumlah"
                       >
                         +
                       </button>
@@ -460,14 +478,29 @@ export default function ProductDetailPage() {
                     </span>
                   </div>
 
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={cartLoading}
-                    className="w-full py-4 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-400 text-white rounded-xl font-medium uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    {cartLoading ? "Menambahkan..." : "Tambah ke Keranjang"}
-                  </button>
+                  <div className="text-sm text-stone-500">
+                    Subtotal:{" "}
+                    <span className="font-semibold text-stone-900">
+                      {formatIDR(product.price * quantity)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={cartLoading}
+                      className="w-full py-4 border border-stone-900 text-stone-900 hover:bg-stone-100 disabled:bg-stone-200 disabled:border-stone-200 disabled:text-stone-400 rounded-xl font-medium uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      {cartLoading ? "Menambahkan..." : "Tambah Keranjang"}
+                    </button>
+                    <button
+                      onClick={handleBuyNow}
+                      className="w-full py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-xl font-medium uppercase tracking-widest text-xs transition-all active:scale-[0.99] cursor-pointer"
+                    >
+                      Buy Now
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -482,9 +515,7 @@ export default function ProductDetailPage() {
 
           <hr className="border-stone-200 mb-16" />
 
-          {/* Reviews section */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-            {/* Left Col: Reviews Statistics & Form */}
             <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-24">
               <div className="bg-white p-6 rounded-2xl border border-stone-200/50 shadow-xs space-y-4">
                 <h2 className="text-lg font-medium text-stone-900 flex items-center gap-2">
@@ -521,7 +552,6 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* Review Input Box (eligibility-based) */}
               {isLoggedIn ? (
                 <>
                   {eligibility.isEligibleToReview ? (
@@ -553,7 +583,6 @@ export default function ProductDetailPage() {
                             </div>
                           )}
 
-                          {/* Star rating selector */}
                           <div className="space-y-1.5">
                             <span className="text-xs text-stone-400 uppercase tracking-widest font-semibold">
                               Rating Produk
@@ -580,7 +609,6 @@ export default function ProductDetailPage() {
                             </div>
                           </div>
 
-                          {/* Comment block */}
                           <div className="space-y-1.5">
                             <label
                               htmlFor="review-comment"
@@ -633,7 +661,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Right Col: Review List */}
             <div className="lg:col-span-7 space-y-6">
               <h2 className="text-xl font-light text-stone-900 border-b border-stone-100 pb-3">
                 Semua Ulasan ({reviews.length})
@@ -643,7 +670,6 @@ export default function ProductDetailPage() {
                 <div className="space-y-6 divide-y divide-stone-100">
                   {reviews.map((rev) => (
                     <article key={rev.id} className="pt-6 first:pt-0 space-y-3">
-                      {/* Reviewer Meta */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-stone-900 text-white flex items-center justify-center text-xs font-bold shadow-xs select-none">
@@ -652,7 +678,6 @@ export default function ProductDetailPage() {
                           <div>
                             <p className="text-sm font-semibold text-stone-900">{rev.user.name}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              {/* Star counts */}
                               <div className="flex items-center gap-0.5">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <Star
@@ -669,14 +694,12 @@ export default function ProductDetailPage() {
                           </div>
                         </div>
 
-                        {/* Date */}
                         <div className="flex items-center gap-1 text-xs text-stone-400">
                           <Calendar className="w-3.5 h-3.5" />
                           <span>{new Date(rev.createdAt).toLocaleDateString("id-ID")}</span>
                         </div>
                       </div>
 
-                      {/* Comment text */}
                       <p className="text-sm text-stone-600 leading-relaxed font-light pl-13">
                         {rev.comment || "Pelanggan tidak meninggalkan ulasan tertulis."}
                       </p>
@@ -693,7 +716,6 @@ export default function ProductDetailPage() {
           </section>
         </main>
 
-        {/* Footer */}
         <footer className="bg-stone-900 text-stone-400">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-xs">
             <p>&copy; 2026 Norr Furniture AS. All rights reserved.</p>
