@@ -4,6 +4,8 @@ import { Package, ChevronRight, ShoppingBag } from "lucide-react";
 import Navbar from "../ui/Navbar";
 import { authService } from "../../lib/authService";
 import { API_BASE_URL } from "../../lib/apiConfig";
+import { reviewService } from "../../lib/reviewService";
+import { formatIDR } from "../../lib/utils";
 
 type OrderStatus = "PENDING" | "PAID" | "SHIPPED" | "COMPLETED" | "CANCELLED";
 
@@ -36,11 +38,15 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
   CANCELLED: { label: "Dibatalkan", color: "bg-red-100 text-red-700" },
 };
 
+const REVIEWABLE_STATUSES: OrderStatus[] = ["PAID", "SHIPPED", "COMPLETED"];
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [reviewForms, setReviewForms] = useState<Record<string, { rating: number; comment: string }>>({});
+  const [reviewStatus, setReviewStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchOrders();
@@ -74,6 +80,43 @@ export default function OrdersPage() {
       await fetchOrders();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Gagal membatalkan");
+    }
+  };
+
+  const updateReviewForm = (
+    productId: string,
+    field: "rating" | "comment",
+    value: number | string,
+  ) => {
+    setReviewForms((prev) => ({
+      ...prev,
+      [productId]: {
+        rating: prev[productId]?.rating || 5,
+        comment: prev[productId]?.comment || "",
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleReviewSubmit = async (productId: string) => {
+    const form = reviewForms[productId] || { rating: 5, comment: "" };
+    setReviewStatus((prev) => ({ ...prev, [productId]: "Mengirim review..." }));
+    try {
+      await reviewService.create({
+        productId,
+        rating: form.rating,
+        comment: form.comment.trim(),
+      });
+      setReviewStatus((prev) => ({ ...prev, [productId]: "Review berhasil dikirim" }));
+      setReviewForms((prev) => ({
+        ...prev,
+        [productId]: { rating: 5, comment: "" },
+      }));
+    } catch (err) {
+      setReviewStatus((prev) => ({
+        ...prev,
+        [productId]: err instanceof Error ? err.message : "Gagal mengirim review",
+      }));
     }
   };
 
@@ -155,7 +198,7 @@ export default function OrdersPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <p className="text-sm font-semibold text-stone-900">
-                        Rp {total.toLocaleString("id-ID")}
+                        {formatIDR(total)}
                       </p>
                       <ChevronRight
                         className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
@@ -170,24 +213,70 @@ export default function OrdersPage() {
                       <div className="space-y-3 mb-5">
                         {order.items.map((item) => {
                           const img = item.product.images?.[0];
+                          const canReview = REVIEWABLE_STATUSES.includes(order.status);
+                          const reviewForm = reviewForms[item.product.id] || { rating: 5, comment: "" };
+
                           return (
-                            <div key={item.id} className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0">
-                                {img ? (
-                                  <img src={img.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <ShoppingBag className="w-4 h-4 text-stone-300" />
+                            <div key={item.id} className="rounded-xl border border-stone-100 p-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0">
+                                  {img ? (
+                                    <img src={img.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <ShoppingBag className="w-4 h-4 text-stone-300" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-stone-800 truncate">{item.product.name}</p>
+                                  <p className="text-xs text-stone-400">Qty: {item.quantity}</p>
+                                </div>
+                                <p className="text-sm font-medium text-stone-800 shrink-0">
+                                  {formatIDR(parseFloat(item.price) * item.quantity)}
+                                </p>
+                              </div>
+
+                              {canReview && (
+                                <div className="mt-3 border-t border-stone-100 pt-3">
+                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                    <select
+                                      value={reviewForm.rating}
+                                      onChange={(event) =>
+                                        updateReviewForm(item.product.id, "rating", Number(event.target.value))
+                                      }
+                                      className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-300"
+                                      aria-label={`Rating untuk ${item.product.name}`}
+                                    >
+                                      {[5, 4, 3, 2, 1].map((rating) => (
+                                        <option key={rating} value={rating}>
+                                          {rating} bintang
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <input
+                                      value={reviewForm.comment}
+                                      onChange={(event) =>
+                                        updateReviewForm(item.product.id, "comment", event.target.value)
+                                      }
+                                      placeholder="Tulis review produk ini"
+                                      className="min-w-0 flex-1 rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-300"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReviewSubmit(item.product.id)}
+                                      className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+                                    >
+                                      Kirim
+                                    </button>
                                   </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-stone-800 truncate">{item.product.name}</p>
-                                <p className="text-xs text-stone-400">Qty: {item.quantity}</p>
-                              </div>
-                              <p className="text-sm font-medium text-stone-800 shrink-0">
-                                Rp {(parseFloat(item.price) * item.quantity).toLocaleString("id-ID")}
-                              </p>
+                                  {reviewStatus[item.product.id] && (
+                                    <p className="mt-2 text-xs text-stone-500">
+                                      {reviewStatus[item.product.id]}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -208,7 +297,7 @@ export default function OrdersPage() {
                       <div className="flex items-center justify-between pt-3 border-t border-stone-100">
                         <span className="text-sm font-semibold text-stone-700">Total Pembayaran</span>
                         <span className="text-base font-bold text-stone-900">
-                          Rp {total.toLocaleString("id-ID")}
+                          {formatIDR(total)}
                         </span>
                       </div>
 

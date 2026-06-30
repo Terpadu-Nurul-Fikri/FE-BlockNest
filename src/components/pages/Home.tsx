@@ -1,19 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Truck,
   RefreshCw,
   Shield,
   Phone,
+  ChevronDown,
 } from "lucide-react";
 import FurnitureHeroSection from "../ui/FurnitureHeroSection";
 import CategoryCard from "../ui/CategoryCard";
 import FeaturedProductsSection from "../ui/FeaturedProductsSection";
 import Seo from "../ui/Seo";
 import Navbar from "../ui/Navbar";
+import ActiveBanners from "../ui/ActiveBanners";
 import { useCart } from "../../context/CartContext";
+import { API_BASE_URL } from "../../lib/apiConfig";
 
 import heroVideo from "../../assets/animate-bg.mp4";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  imageUrl: string;
+  imageAlt: string;
+  rating: number;
+  reviewCount: number;
+  isNew: boolean;
+  slug: string;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
 
 // ── Static data ─────────────────────────────────────────────────────────────
 
@@ -52,123 +78,6 @@ const CATEGORIES = [
   },
 ];
 
-const FEATURED_PRODUCTS = [
-  {
-    id: 1,
-    name: "Fjord Lounge Chair",
-    price: 1290,
-    category: "Armchairs",
-    description:
-      "Gently curved silhouette with solid walnut legs and premium boucle upholstery.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&q=80&fit=crop",
-    imageAlt: "Fjord lounge chair with walnut legs and cream boucle fabric",
-    rating: 4.8,
-    reviewCount: 124,
-    isNew: true,
-    slug: "fjord-lounge-chair",
-  },
-  {
-    id: 2,
-    name: "Holm Dining Table",
-    price: 2450,
-    category: "Dining",
-    description: "Solid white oak top on tapered legs. Seats 6 comfortably.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1549497538-303791108f95?w=600&q=80&fit=crop",
-    imageAlt: "Holm dining table in solid white oak with tapered legs",
-    rating: 4.9,
-    reviewCount: 87,
-    isNew: false,
-    slug: "holm-dining-table",
-  },
-  {
-    id: 3,
-    name: "Tove Pendant Light",
-    price: 320,
-    category: "Lighting",
-    description: "Hand-blown opal glass globe on a matte black canopy.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&q=80&fit=crop",
-    imageAlt: "Tove pendant light with hand-blown opal glass globe",
-    rating: 4.7,
-    reviewCount: 203,
-    isNew: false,
-    slug: "tove-pendant-light",
-  },
-  {
-    id: 4,
-    name: "Lund Bed Frame",
-    price: 1890,
-    category: "Beds",
-    description:
-      "Low-profile platform frame in smoked oak. Queen & King sizes.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&q=80&fit=crop&crop=center",
-    imageAlt: "Lund low-profile platform bed frame in smoked oak",
-    rating: 4.9,
-    reviewCount: 56,
-    isNew: true,
-    slug: "lund-bed-frame",
-  },
-  {
-    id: 5,
-    name: "Saga Modular Sofa",
-    price: 3200,
-    category: "Sofas",
-    description: "Reconfigurable 3-piece modular sofa in natural linen.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80&fit=crop&crop=left",
-    imageAlt: "Saga modular sofa in natural linen with chaise configuration",
-    rating: 4.6,
-    reviewCount: 142,
-    isNew: false,
-    slug: "saga-modular-sofa",
-  },
-  {
-    id: 6,
-    name: "Nord Bookshelf",
-    price: 780,
-    category: "Storage",
-    description: "Open-back bookshelf in lacquered birch plywood. 5 shelves.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80&fit=crop",
-    imageAlt: "Nord open-back bookshelf in lacquered birch plywood",
-    rating: 4.5,
-    reviewCount: 98,
-    isNew: false,
-    slug: "nord-bookshelf",
-  },
-  {
-    id: 7,
-    name: "Eken Coffee Table",
-    price: 590,
-    category: "Tables",
-    description: "Rounded travertine top on a powder-coated steel frame.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80&fit=crop&crop=bottom",
-    imageAlt: "Eken coffee table with travertine top and steel frame",
-    rating: 4.8,
-    reviewCount: 67,
-    isNew: true,
-    slug: "eken-coffee-table",
-  },
-  {
-    id: 8,
-    name: "Birk Desk Chair",
-    price: 640,
-    category: "Office",
-    description: "Ergonomic shell chair in molded plywood with chrome base.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&q=80&fit=crop&crop=right",
-    imageAlt: "Birk ergonomic desk chair in molded plywood with chrome legs",
-    rating: 4.7,
-    reviewCount: 211,
-    isNew: false,
-    slug: "birk-desk-chair",
-  },
-];
-
 const TRUST_ITEMS = [
   { icon: Truck, label: "Free Delivery", desc: "On all orders over $500" },
   {
@@ -180,12 +89,68 @@ const TRUST_ITEMS = [
   { icon: Phone, label: "Expert Advice", desc: "Mon – Sat, 9 am – 6 pm" },
 ];
 
+// ── Skeleton Loader ──────────────────────────────────────────────────────────
+
+function ProductSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="rounded-2xl bg-stone-200 aspect-[4/5] mb-4" />
+      <div className="space-y-2">
+        <div className="h-2.5 w-16 rounded bg-stone-200" />
+        <div className="h-3.5 w-3/4 rounded bg-stone-200" />
+        <div className="h-3 w-1/2 rounded bg-stone-200" />
+      </div>
+    </div>
+  );
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function FurnitureHome() {
   const [cartMsg, setCartMsg] = useState("");
   const { addToCart } = useCart();
   const navigate = useNavigate();
+
+  // Products state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_LIMIT = 8;
+
+  const fetchProducts = useCallback(async (page: number, append = false) => {
+    if (page === 1) setLoadingProducts(true);
+    else setLoadingMore(true);
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/products/featured?page=${page}&limit=${PAGE_LIMIT}`
+      );
+      const json = await res.json();
+      if (json.success) {
+        setProducts((prev) =>
+          append ? [...prev, ...json.data.products] : json.data.products
+        );
+        setPagination(json.data.pagination);
+      }
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+    } finally {
+      setLoadingProducts(false);
+      setLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProducts(1);
+  }, [fetchProducts]);
+
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchProducts(nextPage, true);
+  };
 
   const handleAddToCart = async (productId: string) => {
     if (!localStorage.getItem("auth_token")) {
@@ -196,8 +161,10 @@ export default function FurnitureHome() {
       await addToCart(productId);
       setCartMsg("✓ Ditambahkan ke cart!");
       setTimeout(() => setCartMsg(""), 2500);
-    } catch (err: any) {
-      setCartMsg(err.message || "Gagal menambah ke cart");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Gagal menambah ke cart";
+      setCartMsg(message);
       setTimeout(() => setCartMsg(""), 3000);
     }
   };
@@ -219,6 +186,7 @@ export default function FurnitureHome() {
         )}
 
         {/* ── Navbar (shared component) ──────────────────────────────────── */}
+        <ActiveBanners type="TOP_BAR" />
         <Navbar />
 
         <main>
@@ -235,6 +203,8 @@ export default function FurnitureHome() {
             secondaryCtaText="Explore All Pieces"
             secondaryCtaHref="/collections"
           />
+
+          <ActiveBanners type="HERO_SLIDER" />
 
           {/* ── Trust bar ──────────────────────────────────────────────────── */}
           <section
@@ -294,15 +264,63 @@ export default function FurnitureHome() {
             </div>
           </section>
 
-          {/* ── Featured Products ──────────────────────────────────────────── */}
+          {/* ── Featured Products (from API) ────────────────────────────────── */}
           <div className="bg-white">
-            <FeaturedProductsSection
-              title="New Arrivals"
-              subtitle="Our latest pieces — each one considered, built to last, and ready to make a space feel like yours."
-              products={FEATURED_PRODUCTS}
-              viewAllHref="/new-arrivals"
-              onAddToCart={handleAddToCart}
-            />
+            {loadingProducts ? (
+              <section
+                aria-label="Loading products"
+                className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28"
+              >
+                <div className="mb-12">
+                  <div className="h-7 w-40 rounded bg-stone-200 animate-pulse mb-3" />
+                  <div className="h-4 w-72 rounded bg-stone-200 animate-pulse" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <ProductSkeleton key={i} />
+                  ))}
+                </div>
+              </section>
+            ) : products.length > 0 ? (
+              <>
+                <FeaturedProductsSection
+                  title="New Arrivals"
+                  subtitle="Our latest pieces — each one considered, built to last, and ready to make a space feel like yours."
+                  products={products}
+                  viewAllHref="/new-arrivals"
+                  onAddToCart={handleAddToCart}
+                />
+
+                {/* Load More button */}
+                {pagination?.hasMore && (
+                  <div className="flex justify-center pb-16">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="flex items-center gap-2 px-8 py-3.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-700 bg-white hover:bg-stone-50 hover:border-stone-400 transition-all duration-200 disabled:opacity-50 cursor-pointer"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin" />
+                          Memuat...
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          Tampilkan lebih banyak
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+                <p className="text-stone-400 text-sm">
+                  Belum ada produk tersedia.
+                </p>
+              </section>
+            )}
           </div>
 
           {/* ── Material Callout ───────────────────────────────────────────── */}
@@ -385,6 +403,8 @@ export default function FurnitureHome() {
             </p>
           </section>
         </main>
+
+        <ActiveBanners type="POPUP" />
 
         {/* ── Footer ─────────────────────────────────────────────────────── */}
         <footer className="bg-stone-900 text-stone-400">

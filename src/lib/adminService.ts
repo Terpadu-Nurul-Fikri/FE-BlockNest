@@ -1,5 +1,7 @@
 import { authService } from "./authService";
 import { API_BASE_URL } from "./apiConfig";
+import type { Banner, BannerFormData } from "./bannerService";
+import type { Review } from "./reviewService";
 
 const API = API_BASE_URL;
 
@@ -140,4 +142,22 @@ export const orderApi = {
     req<{ success: boolean; data: AdminOrder }>("PUT", `/api/orders/admin/${id}`, data),
   delete: (id: string) =>
     req<{ success: boolean }>("DELETE", `/api/orders/admin/${id}`),
+};
+
+// â”€â”€ Banners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+export const bannerApi = {
+  getAll: () => req<{ success: boolean; data: Banner[] }>("GET", "/api/banners"),
+  create: (data: BannerFormData) =>
+    req<{ success: boolean; data: Banner }>("POST", "/api/banners", data),
+  update: (id: string, data: Partial<BannerFormData>) =>
+    req<{ success: boolean; data: Banner }>("PUT", `/api/banners/${id}`, data),
+  delete: (id: string) => req<{ success: boolean }>("DELETE", `/api/banners/${id}`),
+};
+
+// â”€â”€ Reviews â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+export const reviewApi = {
+  getAll: () => req<{ success: boolean; data: Review[] }>("GET", "/api/reviews/admin"),
+  delete: (id: string) => req<{ success: boolean }>("DELETE", `/api/reviews/${id}`),
 };

@@ -66,7 +66,7 @@ const RegisterPage = () => {
           });
         }
         setSuccess("Akun berhasil dibuat! Mengalihkan...");
-        setTimeout(() => navigate("/"), 1000);
+        setTimeout(() => navigate("/profile"), 1000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan");

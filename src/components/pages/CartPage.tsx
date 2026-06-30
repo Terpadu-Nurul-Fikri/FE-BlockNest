@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { authService } from "../../lib/authService";
+import { formatIDR } from "../../lib/utils";
 
 export default function CartPage() {
   const { items, totalItems, totalPrice, loading, updateItem, removeItem, clearCart } = useCart();
@@ -133,10 +134,10 @@ export default function CartPage() {
                       {item.product.name}
                     </h3>
                     <p className="text-sm font-semibold text-stone-900 mt-1">
-                      ${(price * item.quantity).toLocaleString()}
+                      {formatIDR(price * item.quantity)}
                       {item.quantity > 1 && (
                         <span className="text-xs text-stone-400 font-normal ml-1">
-                          (${price.toLocaleString()} × {item.quantity})
+                          ({formatIDR(price)} × {item.quantity})
                         </span>
                       )}
                     </p>
@@ -183,7 +184,7 @@ export default function CartPage() {
               <div className="space-y-2 text-sm text-stone-600 mb-4">
                 <div className="flex justify-between">
                   <span>Subtotal ({totalItems} item)</span>
-                  <span>${totalPrice.toLocaleString()}</span>
+                  <span>{formatIDR(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Pengiriman</span>
@@ -193,7 +194,7 @@ export default function CartPage() {
               <div className="border-t border-stone-100 pt-4 mb-6">
                 <div className="flex justify-between font-semibold text-stone-900">
                   <span>Total</span>
-                  <span>${totalPrice.toLocaleString()}</span>
+                  <span>{formatIDR(totalPrice)}</span>
                 </div>
               </div>
               <button

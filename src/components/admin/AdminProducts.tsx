@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Plus, Pencil, Trash2, Search, ArrowLeft, Save } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { productApi, categoryApi, type AdminProduct, type AdminCategory, type ProductFormData } from "../../lib/adminService";
+import { formatIDR } from "../../lib/utils";
 
 // ── Product List ──────────────────────────────────────────────────────────────
 
@@ -115,7 +116,7 @@ export function AdminProductList() {
                         </div>
                       </td>
                       <td className="px-5 py-4 hidden sm:table-cell text-stone-700">
-                        Rp {Number(product.price).toLocaleString("id-ID")}
+                        {formatIDR(Number(product.price))}
                       </td>
                       <td className="px-5 py-4 hidden md:table-cell">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${

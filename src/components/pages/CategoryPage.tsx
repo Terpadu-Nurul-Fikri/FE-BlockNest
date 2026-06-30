@@ -9,6 +9,7 @@ import { useCart } from "../../context/CartContext";
 import Seo from "../ui/Seo";
 import ProductCard from "../ui/ProductCard";
 import Navbar from "../ui/Navbar";
+import ActiveBanners from "../ui/ActiveBanners";
 import { API_BASE_URL } from "../../lib/apiConfig";
 import {
   Select,
@@ -632,6 +633,7 @@ export default function CategoryPage() {
         )}
 
         {/* ── Navbar (shared component) ─────────────────────────────────── */}
+        <ActiveBanners type="TOP_BAR" />
         <Navbar />
 
         <main>
@@ -682,6 +684,8 @@ export default function CategoryPage() {
           </section>
 
           {/* ── Toolbar: count + shadcn sort ────────────────────────────── */}
+          <ActiveBanners type="HERO_SLIDER" />
+
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4 border-b border-stone-100">
             <p className="text-sm text-stone-500">
               <span className="font-medium text-stone-900">
@@ -789,6 +793,8 @@ export default function CategoryPage() {
             </div>
           </section>
         </main>
+
+        <ActiveBanners type="POPUP" />
 
         {/* ── Footer ───────────────────────────────────────────────────── */}
         <footer className="bg-stone-900 text-stone-400">

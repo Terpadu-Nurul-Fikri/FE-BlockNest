@@ -4,6 +4,7 @@ import { ShoppingBag, CheckCircle, ArrowLeft } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { authService } from "../../lib/authService";
 import { API_BASE_URL } from "../../lib/apiConfig";
+import { formatIDR } from "../../lib/utils";
 
 interface BuyNowItem {
   productId: string;
@@ -13,8 +14,8 @@ interface BuyNowItem {
     name: string;
     slug: string;
     price: string;
-    subCategory?: string;
-    images: { imageUrl: string; imageAlt?: string }[];
+    subCategory?: string | null;
+    images: { imageUrl: string; imageAlt?: string | null }[];
   };
 }
 
@@ -25,20 +26,19 @@ interface CheckoutItem {
   product: {
     name: string;
     price: string;
-    subCategory?: string;
-    images: { imageUrl: string; imageAlt?: string }[];
+    subCategory?: string | null;
+    images: { imageUrl: string; imageAlt?: string | null }[];
   };
 }
 
 export default function CheckoutPage() {
-  const { items, totalItems, totalPrice, clearCart } = useCart();
+  const { items, clearCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const isLoggedIn = authService.isAuthenticated();
 
   const buyNowItem = (location.state as { buyNowItem?: BuyNowItem } | null)
     ?.buyNowItem ?? null;
-
   const isBuyNow = buyNowItem !== null;
 
   const displayItems: CheckoutItem[] = isBuyNow
@@ -56,7 +56,6 @@ export default function CheckoutPage() {
     (sum, item) => sum + parseFloat(item.product.price) * item.quantity,
     0,
   );
-
   const displayTotalItems = displayItems.reduce(
     (sum, item) => sum + item.quantity,
     0,
@@ -103,7 +102,6 @@ export default function CheckoutPage() {
     );
   }
 
-  // Success state
   if (success) {
     return (
       <div className="min-h-screen bg-stone-50 flex flex-col">
@@ -172,13 +170,13 @@ export default function CheckoutPage() {
       const json = await res.json();
       setOrderId(json.data.id);
 
-      // Only clear cart if this was a Cart checkout, not Buy Now
       if (!isBuyNow) {
         await clearCart();
       }
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Terjadi kesalahan";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -186,14 +184,13 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      {/* Header */}
       <header className="bg-white border-b border-stone-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="text-xl font-semibold tracking-tight text-stone-900">
             Block<span className="text-stone-400">Nest</span>
           </Link>
           <Link
-            to={isBuyNow && buyNowItem ? `/products/${buyNowItem.product.slug}` : "/cart"}
+            to={isBuyNow && buyNowItem ? `/product/${buyNowItem.product.slug}` : "/cart"}
             className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -214,7 +211,6 @@ export default function CheckoutPage() {
         )}
 
         <div className="grid lg:grid-cols-5 gap-8">
-          {/* Form */}
           <form onSubmit={handleSubmit} className="lg:col-span-3 space-y-5">
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="text-base font-medium text-stone-900 mb-4">Alamat Pengiriman</h2>
@@ -244,11 +240,10 @@ export default function CheckoutPage() {
               disabled={loading}
               className="w-full py-4 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-700 disabled:bg-stone-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
-              {loading ? "Memproses..." : `Buat Pesanan — $${displayTotalPrice.toLocaleString()}`}
+              {loading ? "Memproses..." : `Buat Pesanan - ${formatIDR(displayTotalPrice)}`}
             </button>
           </form>
 
-          {/* Order summary */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
               <h2 className="text-base font-medium text-stone-900 mb-4">
@@ -274,7 +269,7 @@ export default function CheckoutPage() {
                         <p className="text-xs text-stone-400">Qty: {item.quantity}</p>
                       </div>
                       <p className="text-sm font-medium text-stone-900 shrink-0">
-                        ${(price * item.quantity).toLocaleString()}
+                        {formatIDR(price * item.quantity)}
                       </p>
                     </div>
                   );
@@ -283,7 +278,7 @@ export default function CheckoutPage() {
               <div className="border-t border-stone-100 pt-4 space-y-2 text-sm">
                 <div className="flex justify-between text-stone-600">
                   <span>Subtotal</span>
-                  <span>${displayTotalPrice.toLocaleString()}</span>
+                  <span>{formatIDR(displayTotalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-stone-600">
                   <span>Pengiriman</span>
@@ -291,7 +286,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between font-semibold text-stone-900 pt-2 border-t border-stone-100">
                   <span>Total</span>
-                  <span>${displayTotalPrice.toLocaleString()}</span>
+                  <span>{formatIDR(displayTotalPrice)}</span>
                 </div>
               </div>
             </div>

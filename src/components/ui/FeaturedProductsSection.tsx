@@ -1,11 +1,11 @@
 import ProductCard from "./ProductCard";
 
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   category: string;
-  description: string;
+  description?: string;
   imageUrl: string;
   imageAlt: string;
   rating?: number;
@@ -52,10 +52,11 @@ export default function FeaturedProductsSection({
         </a>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
-        {products.map((product) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12">
+        {products.map((product, index) => (
           <ProductCard
             key={product.id}
+            index={index}
             name={product.name}
             price={product.price}
             category={product.category}
