@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Mail, Phone, Package, Edit2, Save, X, Lock } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  Package,
+  Edit2,
+  Save,
+  X,
+  Lock,
+  Camera,
+} from "lucide-react";
 import Navbar from "../ui/Navbar";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../lib/authService";
+import { API_BASE_URL } from "../../lib/apiConfig";
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -27,6 +38,10 @@ export default function ProfilePage() {
   const [pwMode, setPwMode] = useState(false);
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
+
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEditToggle = () => {
     if (!editMode) {
@@ -66,6 +81,15 @@ export default function ProfilePage() {
     }
   };
 
+  const getPhotoSrc = (photoUrl: string) => {
+    // Kalau backend sudah kirim full path (diawali "/"), pakai langsung
+    if (photoUrl.startsWith("/")) {
+      return `${API_BASE_URL}${photoUrl}`;
+    }
+    // Kalau backend cuma kirim nama file, tambahkan folder-nya manual
+    return `${API_BASE_URL}/uploads/profiles/${photoUrl}`;
+  };
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwError("");
@@ -92,14 +116,51 @@ export default function ProfilePage() {
       setPwMode(false);
       setTimeout(() => setPwSuccess(""), 3000);
     } catch (err) {
-      setPwError(err instanceof Error ? err.message : "Gagal mengubah password");
+      setPwError(
+        err instanceof Error ? err.message : "Gagal mengubah password",
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const displayName = user?.name || `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
-  const initials = (user?.firstName || user?.name || "U").charAt(0).toUpperCase();
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("File harus berupa gambar");
+      return;
+    }
+    const maxSizeMB = 2;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      setPhotoError(`Ukuran gambar maksimal ${maxSizeMB}MB`);
+      return;
+    }
+
+    setPhotoError("");
+    setUploadingPhoto(true);
+    try {
+      const token = authService.getToken()!;
+      await authService.uploadPhoto(token, file);
+      await refreshUser();
+    } catch (err) {
+      setPhotoError(
+        err instanceof Error ? err.message : "Gagal mengunggah foto",
+      );
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const triggerFileSelect = () => fileInputRef.current?.click();
+
+  const displayName =
+    user?.name || `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+  const initials = (user?.firstName || user?.name || "U")
+    .charAt(0)
+    .toUpperCase();
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -109,7 +170,9 @@ export default function ProfilePage() {
         {/* Page title */}
         <div className="mb-8">
           <h1 className="text-2xl font-light text-stone-900">Akun Saya</h1>
-          <p className="text-sm text-stone-400 mt-1">Kelola informasi profil dan keamanan akun</p>
+          <p className="text-sm text-stone-400 mt-1">
+            Kelola informasi profil dan keamanan akun
+          </p>
         </div>
 
         {/* Success / Error global */}
@@ -123,17 +186,58 @@ export default function ProfilePage() {
             {errorMsg}
           </div>
         )}
+        {photoError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+            {photoError}
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Profile card */}
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
             {/* Header */}
             <div className="bg-stone-900 px-6 py-8 flex items-center gap-5">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <span className="text-2xl font-semibold text-white">{initials}</span>
+              <div className="relative shrink-0">
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                  {user?.photoUrl ? (
+                    <img
+                      src={getPhotoSrc(user.photoUrl)}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-semibold text-white">
+                      {initials}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={triggerFileSelect}
+                  disabled={uploadingPhoto}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white text-stone-700 flex items-center justify-center shadow-sm hover:bg-stone-100 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Ganti foto profil"
+                >
+                  {uploadingPhoto ? (
+                    <div className="w-3.5 h-3.5 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="w-3.5 h-3.5" />
+                  )}
+                </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-white">{displayName}</h2>
+                <h2 className="text-xl font-semibold text-white">
+                  {displayName}
+                </h2>
                 <p className="text-stone-400 text-sm mt-0.5">{user?.email}</p>
                 <span className="inline-block mt-2 px-2.5 py-0.5 bg-white/10 text-white text-xs rounded-full">
                   {user?.role === "ADMIN" ? "Administrator" : "Customer"}
@@ -152,9 +256,13 @@ export default function ProfilePage() {
                   className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
                 >
                   {editMode ? (
-                    <><X className="w-4 h-4" /> Batal</>
+                    <>
+                      <X className="w-4 h-4" /> Batal
+                    </>
                   ) : (
-                    <><Edit2 className="w-4 h-4" /> Edit</>
+                    <>
+                      <Edit2 className="w-4 h-4" /> Edit
+                    </>
                   )}
                 </button>
               </div>
@@ -169,7 +277,9 @@ export default function ProfilePage() {
                       <input
                         type="text"
                         value={form.firstName}
-                        onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, firstName: e.target.value }))
+                        }
                         className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
                       />
                     </div>
@@ -180,7 +290,9 @@ export default function ProfilePage() {
                       <input
                         type="text"
                         value={form.lastName}
-                        onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, lastName: e.target.value }))
+                        }
                         className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
                       />
                     </div>
@@ -192,7 +304,9 @@ export default function ProfilePage() {
                     <input
                       type="tel"
                       value={form.phone}
-                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, phone: e.target.value }))
+                      }
                       placeholder="08xxxxxxxxxx"
                       className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
                     />
@@ -212,14 +326,18 @@ export default function ProfilePage() {
                     <User className="w-4 h-4 text-stone-300 shrink-0" />
                     <div>
                       <p className="text-xs text-stone-400">Nama Lengkap</p>
-                      <p className="text-sm font-medium text-stone-800 mt-0.5">{displayName}</p>
+                      <p className="text-sm font-medium text-stone-800 mt-0.5">
+                        {displayName}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 py-3 border-b border-stone-50">
                     <Mail className="w-4 h-4 text-stone-300 shrink-0" />
                     <div>
                       <p className="text-xs text-stone-400">Email</p>
-                      <p className="text-sm font-medium text-stone-800 mt-0.5">{user?.email}</p>
+                      <p className="text-sm font-medium text-stone-800 mt-0.5">
+                        {user?.email}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 py-3">
@@ -227,7 +345,11 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-xs text-stone-400">Telepon</p>
                       <p className="text-sm font-medium text-stone-800 mt-0.5">
-                        {user?.phone || <span className="text-stone-400 italic">Belum diisi</span>}
+                        {user?.phone || (
+                          <span className="text-stone-400 italic">
+                            Belum diisi
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -275,7 +397,12 @@ export default function ProfilePage() {
                   <input
                     type="password"
                     value={pwForm.currentPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, currentPassword: e.target.value }))}
+                    onChange={(e) =>
+                      setPwForm((f) => ({
+                        ...f,
+                        currentPassword: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                     required
                   />
@@ -287,7 +414,9 @@ export default function ProfilePage() {
                   <input
                     type="password"
                     value={pwForm.newPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, newPassword: e.target.value }))}
+                    onChange={(e) =>
+                      setPwForm((f) => ({ ...f, newPassword: e.target.value }))
+                    }
                     className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                     required
                     minLength={6}
@@ -300,7 +429,12 @@ export default function ProfilePage() {
                   <input
                     type="password"
                     value={pwForm.confirmPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                    onChange={(e) =>
+                      setPwForm((f) => ({
+                        ...f,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
                     required
                   />
@@ -315,7 +449,10 @@ export default function ProfilePage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setPwMode(false); setPwError(""); }}
+                    onClick={() => {
+                      setPwMode(false);
+                      setPwError("");
+                    }}
                     className="px-5 py-2.5 text-stone-600 text-sm font-medium rounded-xl border border-stone-200 hover:bg-stone-50 transition-colors cursor-pointer"
                   >
                     Batal
@@ -324,7 +461,8 @@ export default function ProfilePage() {
               </form>
             ) : (
               <p className="text-sm text-stone-400">
-                Password terakhir diubah: tidak diketahui. Disarankan menggunakan password yang kuat dan unik.
+                Password terakhir diubah: tidak diketahui. Disarankan
+                menggunakan password yang kuat dan unik.
               </p>
             )}
           </div>
@@ -343,8 +481,12 @@ export default function ProfilePage() {
                   <Package className="w-5 h-5 text-stone-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-stone-800">Pesanan Saya</p>
-                  <p className="text-xs text-stone-400">Lihat riwayat pesanan</p>
+                  <p className="text-sm font-medium text-stone-800">
+                    Pesanan Saya
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    Lihat riwayat pesanan
+                  </p>
                 </div>
               </Link>
               <Link
@@ -352,13 +494,27 @@ export default function ProfilePage() {
                 className="flex items-center gap-3 p-4 rounded-xl border border-stone-100 hover:border-stone-300 hover:bg-stone-50 transition-all group"
               >
                 <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-stone-200 flex items-center justify-center transition-colors">
-                  <svg className="w-5 h-5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  <svg
+                    className="w-5 h-5 text-stone-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-stone-800">Keranjang</p>
-                  <p className="text-xs text-stone-400">Lihat item di keranjang</p>
+                  <p className="text-sm font-medium text-stone-800">
+                    Keranjang
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    Lihat item di keranjang
+                  </p>
                 </div>
               </Link>
             </div>

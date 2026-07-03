@@ -20,15 +20,16 @@ import {
 } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
+import { getPhotoSrc } from "../../lib/photo";
 import SearchOverlay from "./SearchOverlay";
 
 const NAV_LINKS = [
   { label: "Living Room", slug: "living-room", Icon: Sofa },
-  { label: "Bedroom",     slug: "bedroom",     Icon: Bed },
-  { label: "Dining",      slug: "dining",       Icon: UtensilsCrossed },
-  { label: "Office",      slug: "office",       Icon: Monitor },
-  { label: "Outdoor",     slug: "outdoor",      Icon: TreePine },
-  { label: "Sale",        slug: "sale",         Icon: Tag },
+  { label: "Bedroom", slug: "bedroom", Icon: Bed },
+  { label: "Dining", slug: "dining", Icon: UtensilsCrossed },
+  { label: "Office", slug: "office", Icon: Monitor },
+  { label: "Outdoor", slug: "outdoor", Icon: TreePine },
+  { label: "Sale", slug: "sale", Icon: Tag },
 ];
 
 export default function Navbar() {
@@ -48,7 +49,10 @@ export default function Navbar() {
   // Close user dropdown on outside click
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
         setUserMenuOpen(false);
       }
     }
@@ -59,7 +63,9 @@ export default function Navbar() {
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   // Close mobile menu on route change
@@ -75,8 +81,11 @@ export default function Navbar() {
   };
 
   const displayName = user?.firstName || user?.name?.split(" ")[0] || "User";
-  const fullName = user?.name || `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
+  const fullName =
+    user?.name || `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
   const initials = displayName.charAt(0).toUpperCase();
+
+  const photoSrc = getPhotoSrc(user?.photoUrl);
 
   return (
     <>
@@ -113,8 +122,8 @@ export default function Navbar() {
                           ? "text-rose-700 underline underline-offset-4"
                           : "text-rose-500 hover:text-rose-700"
                         : isActive
-                        ? "text-stone-900 underline underline-offset-4"
-                        : "text-stone-500 hover:text-stone-900"
+                          ? "text-stone-900 underline underline-offset-4"
+                          : "text-stone-500 hover:text-stone-900"
                     }`}
                     aria-current={isActive ? "page" : undefined}
                   >
@@ -137,7 +146,11 @@ export default function Navbar() {
                   : "text-stone-500 hover:bg-stone-100 hover:text-stone-900"
               }`}
             >
-              {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+              {searchOpen ? (
+                <X className="w-4 h-4" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
             </button>
 
             {/* Cart */}
@@ -166,8 +179,16 @@ export default function Navbar() {
                   aria-label="User menu"
                   aria-expanded={userMenuOpen}
                 >
-                  <span className="w-7 h-7 rounded-full bg-stone-900 text-white text-xs font-semibold flex items-center justify-center shrink-0">
-                    {initials}
+                  <span className="w-7 h-7 rounded-full bg-stone-900 text-white text-xs font-semibold flex items-center justify-center shrink-0 overflow-hidden">
+                    {photoSrc ? (
+                      <img
+                        src={photoSrc}
+                        alt={displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
                   </span>
                   <span className="hidden sm:block text-sm font-medium text-stone-700 max-w-[80px] truncate">
                     {displayName}
@@ -182,8 +203,12 @@ export default function Navbar() {
                 {userMenuOpen && (
                   <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-stone-100/80 py-2 z-50">
                     <div className="px-4 py-3 border-b border-stone-100">
-                      <p className="text-sm font-semibold text-stone-900 truncate">{fullName}</p>
-                      <p className="text-xs text-stone-400 truncate mt-0.5">{user?.email}</p>
+                      <p className="text-sm font-semibold text-stone-900 truncate">
+                        {fullName}
+                      </p>
+                      <p className="text-xs text-stone-400 truncate mt-0.5">
+                        {user?.email}
+                      </p>
                     </div>
                     <div className="py-1">
                       <Link
@@ -198,7 +223,8 @@ export default function Navbar() {
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                       >
-                        <Package className="w-4 h-4 text-stone-400" /> Pesanan Saya
+                        <Package className="w-4 h-4 text-stone-400" /> Pesanan
+                        Saya
                       </Link>
                       {user?.role === "ADMIN" && (
                         <Link
@@ -206,7 +232,8 @@ export default function Navbar() {
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                         >
-                          <LayoutDashboard className="w-4 h-4 text-stone-400" /> Admin Panel
+                          <LayoutDashboard className="w-4 h-4 text-stone-400" />{" "}
+                          Admin Panel
                         </Link>
                       )}
                     </div>
@@ -245,7 +272,11 @@ export default function Navbar() {
               onClick={() => setMobileOpen((v) => !v)}
               className="md:hidden flex w-9 h-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 transition-colors duration-200 cursor-pointer"
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
             </button>
           </div>
 
@@ -332,8 +363,8 @@ export default function Navbar() {
                             ? "bg-rose-600 text-white"
                             : "text-rose-600 hover:bg-rose-50"
                           : isActive
-                          ? "bg-stone-900 text-white"
-                          : "text-stone-700 hover:bg-stone-50"
+                            ? "bg-stone-900 text-white"
+                            : "text-stone-700 hover:bg-stone-50"
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
@@ -356,12 +387,24 @@ export default function Navbar() {
               <div className="space-y-0.5">
                 {/* User info card */}
                 <div className="flex items-center gap-3 px-3 py-3 mb-1 rounded-xl bg-stone-50">
-                  <span className="w-9 h-9 rounded-full bg-stone-900 text-white text-sm font-semibold flex items-center justify-center shrink-0">
-                    {initials}
+                  <span className="w-9 h-9 rounded-full bg-stone-900 text-white text-sm font-semibold flex items-center justify-center shrink-0 overflow-hidden">
+                    {photoSrc ? (
+                      <img
+                        src={photoSrc}
+                        alt={fullName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-stone-900 truncate">{fullName}</p>
-                    <p className="text-xs text-stone-400 truncate">{user?.email}</p>
+                    <p className="text-sm font-semibold text-stone-900 truncate">
+                      {fullName}
+                    </p>
+                    <p className="text-xs text-stone-400 truncate">
+                      {user?.email}
+                    </p>
                   </div>
                 </div>
 
@@ -385,7 +428,8 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                   >
-                    <LayoutDashboard className="w-4 h-4 text-stone-400" /> Admin Panel
+                    <LayoutDashboard className="w-4 h-4 text-stone-400" /> Admin
+                    Panel
                   </Link>
                 )}
               </div>

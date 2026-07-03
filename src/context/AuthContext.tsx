@@ -15,6 +15,7 @@ export interface AuthUser {
   firstName: string;
   lastName?: string;
   phone?: string;
+  photoUrl?: string;
   role: string;
 }
 
@@ -56,6 +57,7 @@ function getInitialUser(): AuthUser | null {
       firstName: (payload.name || "").split(" ")[0] || "",
       lastName: (payload.name || "").split(" ").slice(1).join(" ") || undefined,
       phone: payload.phone,
+      photoUrl: payload.photoUrl,
       role: payload.role || "CUSTOMER",
     };
   } catch {
@@ -86,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           firstName: nameParts[0] || d.firstName || "",
           lastName: nameParts.slice(1).join(" ") || d.lastName || undefined,
           phone: d.phone,
+          photoUrl: d.photoUrl,
           role: d.role,
         });
       } else {

@@ -10,6 +10,7 @@ interface AuthResponse {
     firstName: string;
     lastName?: string;
     phone?: string;
+    photoUrl?: string;
     role: string;
     createdAt?: string;
     updatedAt?: string;
@@ -22,6 +23,18 @@ interface ForgotPasswordResponse {
   message: string;
   resetToken?: string;
   resetUrl?: string;
+}
+
+interface UploadPhotoResponse {
+  status: string;
+  message: string;
+  data: {
+    id: string;
+    firstName: string;
+    lastName?: string;
+    email: string;
+    photoUrl: string;
+  };
 }
 
 export const authService = {
@@ -76,7 +89,10 @@ export const authService = {
     return json;
   },
 
-  async resetPassword(token: string, password: string): Promise<ForgotPasswordResponse> {
+  async resetPassword(
+    token: string,
+    password: string,
+  ): Promise<ForgotPasswordResponse> {
     const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,7 +148,7 @@ export const authService = {
       phone?: string;
       currentPassword?: string;
       newPassword?: string;
-    }
+    },
   ): Promise<AuthResponse> {
     const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
       method: "PUT",
@@ -149,5 +165,24 @@ export const authService = {
     }
 
     return res.json();
+  },
+
+  async uploadPhoto(token: string, file: File): Promise<UploadPhotoResponse> {
+    const formData = new FormData();
+    formData.append("photo", file);
+
+    const res = await fetch(`${API_BASE_URL}/api/users/profile/photo`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || "Gagal mengunggah foto profil");
+    }
+    return json;
   },
 };
