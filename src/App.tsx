@@ -10,6 +10,8 @@ import CartPage from "./components/pages/CartPage";
 import CheckoutPage from "./components/pages/CheckoutPage";
 import OrdersPage from "./components/pages/OrdersPage";
 import ProductDetailPage from "./components/pages/ProductDetailPage";
+import PaymentSimulation from "./components/checkout/PaymentSimulation";
+import InvoicePage from "./components/checkout/InvoicePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import AdminDashboard from "./components/admin/AdminDashboard";
@@ -67,6 +69,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CheckoutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payment/:id"
+        element={
+          <ProtectedRoute>
+            <PaymentSimulation />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invoice/:id"
+        element={
+          <ProtectedRoute>
+            <InvoicePage />
           </ProtectedRoute>
         }
       />
